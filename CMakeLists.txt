@@ -26,9 +26,13 @@ include_directories(
 set(USHIONN_SOURCES
     src/core/tensor.cpp
     src/core/common.cpp
+    src/core/variable.cpp
+    src/layers/layers.cpp
+    src/layers/activation.cpp
     src/cuda/kernels.cu
     src/cuda/cuda_utils.cu
     src/cuda/tensor.cu
+    src/cuda/activation.cu
 )
 
 add_library(ushionn STATIC ${USHIONN_SOURCES})

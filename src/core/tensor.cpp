@@ -9,6 +9,11 @@ namespace ushionn
 {
 
 // --- 생성자 구현 ---
+Tensor::Tensor()
+{
+    cublasCreate(&cublas_handle_);
+}
+
 Tensor::Tensor(std::vector<size_t> shape, DataType type) : cpu_data_ptr_(nullptr, type), shape_(shape)
 {
     cublasCreate(&cublas_handle_);
@@ -168,6 +173,79 @@ void Tensor::allocate_cpu_mem(size_t total_bytes)
         else if (type_ == DataType::FLOAT64)
             cpu_data_ptr_.reset(new double[total_bytes_ / sizeof(double)]);
     }
+}
+
+void Tensor::to(DataLocation location)
+{
+    if (location == DataLocation::HOST && location_ != DataLocation::HOST)
+    {
+        if (type_ == DataType::FLOAT32)
+            cpu_data_ptr_.reset(new float[total_bytes_ / sizeof(float)]);
+        else if (type_ == DataType::FLOAT64)
+            cpu_data_ptr_.reset(new double[total_bytes_ / sizeof(double)]);
+
+        auto status = cudaMemcpy(cpu_data_ptr_.get(), gpu_data_ptr_.get(), total_bytes_, cudaMemcpyDeviceToHost);
+
+        USHIONN_ASSERT(status == cudaSuccess, "cudaMemcpy 오류, code : " + status);
+
+        gpu_data_ptr_.reset(nullptr);
+        location_ = DataLocation::HOST;
+    }
+    else if (location == DataLocation::DEVICE && location_ != DataLocation::DEVICE)
+    {
+        void* tmp_ptr = nullptr;
+        auto status1 = cudaMalloc(&tmp_ptr, total_bytes_);
+        gpu_data_ptr_.reset(tmp_ptr);
+
+        USHIONN_ASSERT(status1 == cudaSuccess, "cudaMalloc 오류, code : " + status1);
+
+        auto status2 = cudaMemcpy(gpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_, cudaMemcpyHostToDevice);
+
+        USHIONN_ASSERT(status2 == cudaSuccess, "cudaMemcpy 오류, code : " + status2);
+
+        gpu_data_ptr_.reset(nullptr);
+        location_ = DataLocation::DEVICE;
+    }
+}
+
+std::vector<size_t> Tensor::get_shape() const
+{
+    return shape_;
+}
+
+DataLocation Tensor::get_device() const
+{
+    return location_;
+}
+
+DataType Tensor::get_type() const
+{
+    return type_;
+}
+
+size_t Tensor::get_total_bytes() const
+{
+    return total_bytes_;
+}
+
+const void* const Tensor::get_cpu_ptr() const
+{
+    return cpu_data_ptr_.get();
+}
+
+const void* const Tensor::get_gpu_ptr() const
+{
+    return gpu_data_ptr_.get();
+}
+
+void* const Tensor::get_cpu_ptr_mutable()
+{
+    return cpu_data_ptr_.get();
+}
+
+void* const Tensor::get_gpu_ptr_mutable()
+{
+    return gpu_data_ptr_.get();
 }
 
 void Tensor::add(const Tensor& b, Tensor& r)

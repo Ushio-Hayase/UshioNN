@@ -22,11 +22,11 @@ namespace ushionn
 {
 void Tensor::multiply(const Tensor& b, Tensor& r)
 {
-    USHIONN_ASSERT(shape_ == b.shape_, "The dimension of the tensor calculating does not match");
-    USHIONN_ASSERT(shape_ == r.shape_, "The dimension of the tensor calculating does not match");
+    USHIONN_ASSERT(shape_ == b.shape_, "계산을 수행하는 두 텐서의 차원이 일치하지 않습니다.");
+    USHIONN_ASSERT(shape_ == r.shape_, "계산을 수행하는 두 텐서의 차원이 일치하지 않습니다.");
 
-    USHIONN_ASSERT(location_ == b.location_, "The location of the data exists must be the same.");
-    USHIONN_ASSERT(location_ == r.location_, "The location of the data exists must be the same.");
+    USHIONN_ASSERT(location_ == b.location_, "데이터는 동일한 위치에 존재해야합니다.");
+    USHIONN_ASSERT(location_ == r.location_, "데이터는 동일한 위치에 존재해야합니다.");
 
     if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT32)
     {

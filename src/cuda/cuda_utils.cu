@@ -1,13 +1,9 @@
 // src/cuda/cuda_utils.cu
-#include "core/common.h"      // ushionn::internal::handleErrorInternal 사용 위함
-#include "cuda/cuda_utils.h"  // 선언부
-
-// 실제 CUDA/cuDNN 헤더는 여기서만 include
-#include <cuda_runtime.h>
-#include <cudnn.h>
-
 #include <iostream>  // 여기서 직접 std::cerr 사용 안함 (handleErrorInternal이 처리)
 #include <sstream>   // 여기서 직접 std::ostringstream 사용 안함 (handleErrorInternal이 처리)
+
+#include "core/common.h"      // ushionn::internal::handleErrorInternal 사용 위함
+#include "cuda/cuda_utils.h"  // 선언부
 
 namespace ushionn
 {

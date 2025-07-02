@@ -12,25 +12,15 @@
 
 namespace ushionn
 {
-// 정적 멤버 초기화 (generate_unique_id_internal용)
 static std::atomic<int64_t> tensor_uid_counter = 1000;
-// CUDA 메모리 해제를 위한 커스텀 Deleter
 
 class Tensor
 {
    public:
-    // 데이터 위치 상태를 나타내는 열거형
-    enum class DataLocation
-    {
-        NONE,    // 데이터 없음 (메모리 할당 전)
-        HOST,    // CPU 메모리에만 유효한 데이터 존재
-        DEVICE,  // GPU 메모리에만 유효한 데이터 존재
-    };
-
     // --- 생성자 및 소멸자 ---
-    Tensor() = default;
+    Tensor();
 
-    Tensor(std::vector<size_t> shape, DataType type);
+    Tensor(std::vector<size_t> shape, DataType type = DataType::FLOAT32);
 
     /// @brief HOST에 데이터를 채우며 텐서를 생성합니다.
     /// @tparam T 자료형
@@ -91,6 +81,18 @@ class Tensor
     void allocate_gpu_mem(size_t total_bytes);
     void allocate_cpu_mem(size_t total_bytes);
 
+    void to(DataLocation location);
+
+    std::vector<size_t> get_shape() const;
+    DataLocation get_device() const;
+    DataType get_type() const;
+    size_t get_total_bytes() const;
+
+    const void* const get_cpu_ptr() const;
+    const void* const get_gpu_ptr() const;
+    void* const get_cpu_ptr_mutable();
+    void* const get_gpu_ptr_mutable();
+
    private:
     struct CudaDeleter
     {
@@ -107,6 +109,8 @@ class Tensor
     struct HostDeleter
     {
         std::function<void(void*)> deleter_func;
+
+        HostDeleter() = default;
 
         HostDeleter(DataType type)
         {
@@ -139,7 +143,7 @@ class Tensor
 
     cublasHandle_t cublas_handle_;
 
-    std::unique_ptr<void, HostDeleter> cpu_data_ptr_;
+    std::unique_ptr<void, HostDeleter> cpu_data_ptr_ = nullptr;
     std::unique_ptr<void, CudaDeleter> gpu_data_ptr_ = nullptr;
 
     size_t total_bytes_;
