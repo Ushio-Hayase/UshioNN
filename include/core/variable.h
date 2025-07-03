@@ -13,8 +13,7 @@ class Variable
     Variable();
 
     Variable(std::vector<size_t> shape);
-    Variable(std::vector<size_t> shape, int id, DataType type = DataType::FLOAT32,
-             DataLocation device = DataLocation::HOST);
+    Variable(std::vector<size_t> shape, DataType type = DataType::FLOAT32, DataLocation device = DataLocation::HOST);
 
     const Tensor& const get_data_ref();
     Tensor& get_data_ref_mutable();

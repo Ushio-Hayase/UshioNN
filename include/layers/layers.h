@@ -17,6 +17,7 @@ namespace nn
 class Layer
 {
    public:
+    Layer() = default;
     Layer(std::string name) : name_(std::move(name)), data_type_(DataType::FLOAT32) {}
     Layer(std::string name, DataType type) : name_(std::move(name)), data_type_(type) {}
     virtual ~Layer();
@@ -51,10 +52,12 @@ class DenseLayer : public Layer
 {
    public:
     DenseLayer();
-    DenseLayer(spVariable* w, spVariable* b, bool isTranspose = false);
-    DenseLayer(spVariable* w, bool isTranspose = false);
+    DenseLayer(Variable* w, Variable* b, bool isTranspose = false);
+    DenseLayer(Variable* w, bool isTranspose = false);
     DenseLayer(int input_size, int output_size);
     DenseLayer(int input_size, int output_size, bool no_bias);
+
+    ~DenseLayer();
 
     spVariable forward(std::vector<spVariable>& inputs, std::vector<spVariable>& outputs);
     void backward(Tensor& p_grad, std::vector<spVariable>& inputs, std::vector<spVariable>& outputs);
@@ -64,10 +67,10 @@ class DenseLayer : public Layer
     std::vector<int64_t> get_output_shape(std::vector<int64_t> input_dims) const override;
 
    private:
-    Tensor weights_;
-    Tensor bias_;
-    Tensor weights_grad_;
-    Tensor bias_grad_;
+    Variable* weights_;
+    Variable* bias_;
+
+    bool isTranspose_;
 };
 class ReLULayer : public Layer
 {

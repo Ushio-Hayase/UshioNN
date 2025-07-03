@@ -2,7 +2,7 @@
 
 namespace ushionn
 {
-Variable::Variable()
+Variable::Variable() : data_(), grad_(), type_(DataType::FLOAT32), device_(DataLocation::NONE)
 {
 }
 
@@ -24,8 +24,8 @@ Variable::Variable(std::vector<size_t> shape) : data_(shape, DataType::FLOAT32),
     }
 }
 
-Variable::Variable(std::vector<size_t> shape, int id, DataType type, DataLocation device)
-    : data_(shape, type), grad_(shape, type), id_(id), type_(type), device_(device)
+Variable::Variable(std::vector<size_t> shape, DataType type, DataLocation device)
+    : data_(shape, type), grad_(shape, type), type_(type), device_(device)
 {
     if (device_ == DataLocation::HOST)
     {

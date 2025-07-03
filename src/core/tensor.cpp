@@ -2,7 +2,8 @@
 
 #include <cuda_runtime.h>  // for cudaMemcpy, cudaMemset etc.
 
-#include <atomic>    // for generate_unique_id_internal
+#include <atomic>  // for generate_unique_id_internal
+#include <concepts>
 #include <iostream>  // for print_meta_info
 
 namespace ushionn
@@ -21,10 +22,16 @@ Tensor::Tensor(std::vector<size_t> shape, DataType type) : cpu_data_ptr_(nullptr
 
     shape_size_ = shape_.size();
     type_ = type;
+
+    size_t total_elements = 1;
+    for (size_t dim : shape)
+    {
+        total_elements *= dim;
+    }
     if (type_ == DataType::FLOAT32)
-        total_bytes_ = std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(float);
+        total_bytes_ = total_elements * sizeof(float);
     else if (type_ == DataType::FLOAT64)
-        total_bytes_ = std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(double);
+        total_bytes_ = total_elements * sizeof(double);
 }
 
 template <typename T>
@@ -110,7 +117,7 @@ Tensor Tensor::operator*(const Tensor& other)
     return result;
 }
 
-template <typename T>
+template <ScalarType T>
 Tensor Tensor::operator*(const T& scalar)
 {
     static_assert(std::is_arithmetic_v<T>, "스칼라는 숫자 타입이여야 합니다.");
@@ -118,10 +125,20 @@ Tensor Tensor::operator*(const T& scalar)
     USHIONN_ASSERT(location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
 
     Tensor result(this->shape_, type_);
-    result.allocate_cpu_mem(total_bytes_);
+
+    // 위치에 따른 메모리 할당
+    if (location_ == DataLocation::DEVICE)
+    {
+        result.allocate_gpu_mem(total_bytes_);
+        result.location_ = DataLocation::DEVICE;
+    }
+    else
+    {
+        result.allocate_cpu_mem(total_bytes_);
+        result.location_ = DataLocation::HOST;
+    }
 
     multiply(scalar, result);
-
     return result;
 }
 
@@ -203,7 +220,7 @@ void Tensor::to(DataLocation location)
 
         USHIONN_ASSERT(status2 == cudaSuccess, "cudaMemcpy 오류, code : " + status2);
 
-        gpu_data_ptr_.reset(nullptr);
+        cpu_data_ptr_.reset(nullptr);
         location_ = DataLocation::DEVICE;
     }
 }
@@ -313,13 +330,14 @@ void Tensor::multiply(const T& b, Tensor& r)
         {
             total_elements *= dim;
         }
-        if (typeid(T) != typeid(float))
-            USHIONN_WARN("텐서와 주어진 스칼라의 타입이 일치하지 않아 캐스팅을 진행합니다.");
 
-        auto state = cublasSscal(r.cublas_handle_, total_elements, &b, static_cast<float*>(gpu_data_ptr_.get()), 1);
+        // 타입 안전한 변환
+        float scalar_f = static_cast<float>(b);
+        auto state =
+            cublasSscal(r.cublas_handle_, total_elements, &scalar_f, static_cast<float*>(gpu_data_ptr_.get()), 1);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem adding tensor, Error state : " << state << std::endl;
+            std::cerr << "There was a problem multiplying tensor, Error state : " << state << std::endl;
     }
     else if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT64)
     {
@@ -328,16 +346,18 @@ void Tensor::multiply(const T& b, Tensor& r)
         {
             total_elements *= dim;
         }
-        auto state = cublasDscal(r.cublas_handle_, total_elements, &b, static_cast<double*>(gpu_data_ptr_.get()), 1);
 
-        USHIONN(typeid(T) == typeid(double), "텐서와 주어진 스칼라의 타입이 일치하지 않아 캐스팅을 진행합니다.");
+        // 타입 안전한 변환
+        double scalar_d = static_cast<double>(b);
+        auto state =
+            cublasDscal(r.cublas_handle_, total_elements, &scalar_d, static_cast<double*>(gpu_data_ptr_.get()), 1);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem adding tensor, Error state : " << state << std::endl;
+            std::cerr << "There was a problem multiplying tensor, Error state : " << state << std::endl;
     }
     else if (location_ == DataLocation::HOST)
     {
-        schalar_multiply_cpu(b, r);
+        scalar_multiply_cpu(b, r);
     }
 }
 
@@ -375,8 +395,8 @@ void Tensor::add_cpu(const Tensor& b, Tensor& r)
     }
 }
 
-template <typename T>
-void Tensor::schalar_multiply_cpu(const T& b, Tensor& r)
+template <ScalarType T>
+void Tensor::scalar_multiply_cpu(const T& b, Tensor& r)
 {
     // 전체 원소수 계산
     size_t total_elements = 1;
@@ -388,9 +408,6 @@ void Tensor::schalar_multiply_cpu(const T& b, Tensor& r)
     // 타입별로 계산 수행
     if (type_ == DataType::FLOAT32)
     {
-        if (typeid(T) != typeid(float))
-            USHIONN_WARN("텐서와 주어진 스칼라의 타입이 일치하지 않아 캐스팅을 진행합니다.");
-
         const float* a_data = static_cast<const float*>(cpu_data_ptr_.get());
         float* r_data = static_cast<float*>(r.cpu_data_ptr_.get());
 
@@ -403,8 +420,6 @@ void Tensor::schalar_multiply_cpu(const T& b, Tensor& r)
     }
     else if (type_ == DataType::FLOAT64)
     {
-        USHIONN(typeid(T) == typeid(double), "텐서와 주어진 스칼라의 타입이 일치하지 않아 캐스팅을 진행합니다.");
-
         const double* a_data = static_cast<const double*>(cpu_data_ptr_.get());
         double* r_data = static_cast<double*>(r.cpu_data_ptr_.get());
 
@@ -429,6 +444,521 @@ void Tensor::calculate_strides()
     {
         stride *= shape_[i];
         strides_[i] = stride;
+    }
+}
+
+void Tensor::transpose_cpu(Tensor& r) const
+{
+    USHIONN_ASSERT(shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
+
+    // 배치 크기 계산
+    size_t batch_size = 1;
+    for (size_t i = 0; i < shape_size_ - 2; ++i)
+    {
+        batch_size *= shape_[i];
+    }
+
+    size_t rows = shape_[shape_size_ - 2];
+    size_t cols = shape_[shape_size_ - 1];
+
+    if (type_ == DataType::FLOAT32)
+    {
+        const float* input = static_cast<const float*>(cpu_data_ptr_.get());
+        float* output = static_cast<float*>(r.cpu_data_ptr_.get());
+
+        for (size_t batch = 0; batch < batch_size; ++batch)
+        {
+            size_t batch_offset_input = batch * rows * cols;
+            size_t batch_offset_output = batch * rows * cols;
+
+            for (size_t i = 0; i < rows; ++i)
+            {
+                for (size_t j = 0; j < cols; ++j)
+                {
+                    // (i, j) -> (j, i)
+                    output[batch_offset_output + j * rows + i] = input[batch_offset_input + i * cols + j];
+                }
+            }
+        }
+    }
+    else if (type_ == DataType::FLOAT64)
+    {
+        const double* input = static_cast<const double*>(cpu_data_ptr_.get());
+        double* output = static_cast<double*>(r.cpu_data_ptr_.get());
+
+        for (size_t batch = 0; batch < batch_size; ++batch)
+        {
+            size_t batch_offset_input = batch * rows * cols;
+            size_t batch_offset_output = batch * rows * cols;
+
+            for (size_t i = 0; i < rows; ++i)
+            {
+                for (size_t j = 0; j < cols; ++j)
+                {
+                    // (i, j) -> (j, i)
+                    output[batch_offset_output + j * rows + i] = input[batch_offset_input + i * cols + j];
+                }
+            }
+        }
+    }
+}
+
+Tensor Tensor::permute(size_t dim1, size_t dim2)
+{
+    USHIONN_ASSERT(dim1 < shape_size_ && dim2 < shape_size_, "차원 인덱스가 유효하지 않습니다");
+
+    if (dim1 == dim2)
+    {
+        // 같은 차원이면 복사본 반환
+        Tensor result(shape_, type_);
+        if (location_ == DataLocation::DEVICE)
+        {
+            result.allocate_gpu_mem(total_bytes_);
+            result.location_ = DataLocation::DEVICE;
+            cudaMemcpy(result.gpu_data_ptr_.get(), gpu_data_ptr_.get(), total_bytes_, cudaMemcpyDeviceToDevice);
+        }
+        else
+        {
+            result.allocate_cpu_mem(total_bytes_);
+            result.location_ = DataLocation::HOST;
+            std::memcpy(result.cpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_);
+        }
+        return result;
+    }
+
+    // 결과 차원 계산
+    std::vector<size_t> result_shape = shape_;
+    std::swap(result_shape[dim1], result_shape[dim2]);
+
+    Tensor result(result_shape, type_);
+
+    if (location_ == DataLocation::DEVICE)
+    {
+        result.allocate_gpu_mem(result.get_total_bytes());
+        result.location_ = DataLocation::DEVICE;
+    }
+    else
+    {
+        result.allocate_cpu_mem(result.get_total_bytes());
+        result.location_ = DataLocation::HOST;
+    }
+
+    // 마지막 2차원 교환인 경우 최적화된 transpose 사용
+    if ((dim1 == shape_size_ - 2 && dim2 == shape_size_ - 1) || (dim1 == shape_size_ - 1 && dim2 == shape_size_ - 2))
+    {
+        if (location_ == DataLocation::DEVICE)
+        {
+            transpose_gpu(result);
+        }
+        else
+        {
+            transpose_cpu(result);
+        }
+    }
+    else
+    {
+        // 일반적인 차원 교환
+        if (location_ == DataLocation::DEVICE)
+        {
+            permute_gpu_general(dim1, dim2, result);
+        }
+        else
+        {
+            permute_cpu_general(dim1, dim2, result);
+        }
+    }
+
+    return result;
+}
+
+// 일반적인 차원 교환을 위한 CPU 구현
+void Tensor::permute_cpu_general(size_t dim1, size_t dim2, Tensor& result)
+{
+    // 전체 원소 개수
+    size_t total_elements = 1;
+    for (size_t dim : shape_)
+    {
+        total_elements *= dim;
+    }
+
+    // Stride 계산 (원본)
+    std::vector<size_t> strides(shape_size_);
+    strides[shape_size_ - 1] = 1;
+    for (int i = shape_size_ - 2; i >= 0; --i)
+    {
+        strides[i] = strides[i + 1] * shape_[i + 1];
+    }
+
+    // Stride 계산 (결과)
+    std::vector<size_t> result_strides(shape_size_);
+    result_strides[shape_size_ - 1] = 1;
+    for (int i = shape_size_ - 2; i >= 0; --i)
+    {
+        result_strides[i] = result_strides[i + 1] * result.shape_[i + 1];
+    }
+
+    if (type_ == DataType::FLOAT32)
+    {
+        const float* input = static_cast<const float*>(cpu_data_ptr_.get());
+        float* output = static_cast<float*>(result.cpu_data_ptr_.get());
+
+        for (size_t linear_idx = 0; linear_idx < total_elements; ++linear_idx)
+        {
+            // 1차원 인덱스를 다차원 인덱스로 변환
+            std::vector<size_t> multi_idx(shape_size_);
+            size_t temp_idx = linear_idx;
+
+            for (size_t i = 0; i < shape_size_; ++i)
+            {
+                multi_idx[i] = temp_idx / strides[i];
+                temp_idx %= strides[i];
+            }
+
+            // 차원 교환
+            std::swap(multi_idx[dim1], multi_idx[dim2]);
+
+            // 다차원 인덱스를 결과의 1차원 인덱스로 변환
+            size_t result_linear_idx = 0;
+            for (size_t i = 0; i < shape_size_; ++i)
+            {
+                result_linear_idx += multi_idx[i] * result_strides[i];
+            }
+
+            output[result_linear_idx] = input[linear_idx];
+        }
+    }
+    else if (type_ == DataType::FLOAT64)
+    {
+        const double* input = static_cast<const double*>(cpu_data_ptr_.get());
+        double* output = static_cast<double*>(result.cpu_data_ptr_.get());
+
+        for (size_t linear_idx = 0; linear_idx < total_elements; ++linear_idx)
+        {
+            // 1차원 인덱스를 다차원 인덱스로 변환
+            std::vector<size_t> multi_idx(shape_size_);
+            size_t temp_idx = linear_idx;
+
+            for (size_t i = 0; i < shape_size_; ++i)
+            {
+                multi_idx[i] = temp_idx / strides[i];
+                temp_idx %= strides[i];
+            }
+
+            // 차원 교환
+            std::swap(multi_idx[dim1], multi_idx[dim2]);
+
+            // 다차원 인덱스를 결과의 1차원 인덱스로 변환
+            size_t result_linear_idx = 0;
+            for (size_t i = 0; i < shape_size_; ++i)
+            {
+                result_linear_idx += multi_idx[i] * result_strides[i];
+            }
+
+            output[result_linear_idx] = input[linear_idx];
+        }
+    }
+}
+
+std::vector<size_t> Tensor::calculate_transpose_shape() const
+{
+    std::vector<size_t> result_shape = shape_;
+
+    if (shape_size_ >= 2)
+    {
+        // 마지막 2차원을 교환
+        std::swap(result_shape[shape_size_ - 2], result_shape[shape_size_ - 1]);
+    }
+
+    return result_shape;
+}
+
+Tensor Tensor::transpose() const
+{
+    std::vector<size_t> result_shape = calculate_transpose_shape();
+    Tensor result(result_shape, type_);
+
+    if (location_ == DataLocation::DEVICE)
+    {
+        result.allocate_gpu_mem(result.get_total_bytes());
+        result.location_ = DataLocation::DEVICE;
+        transpose_gpu(result);
+    }
+    else
+    {
+        result.allocate_cpu_mem(result.get_total_bytes());
+        result.location_ = DataLocation::HOST;
+        transpose_cpu(result);
+    }
+
+    return result;
+}
+
+void Tensor::transpose(Tensor& r)
+{
+    USHIONN_ASSERT(location_ == r.location_, "데이터 위치가 동일해야 합니다");
+
+    std::vector<size_t> expected_shape = calculate_transpose_shape();
+    USHIONN_ASSERT(r.shape_ == expected_shape, "결과 텐서의 차원이 전치 결과와 맞지 않습니다");
+
+    if (location_ == DataLocation::DEVICE)
+    {
+        transpose_gpu(r);
+    }
+    else
+    {
+        transpose_cpu(r);
+    }
+}
+
+void Tensor::transpose_()
+{
+    if (shape_size_ < 2)
+    {
+        return;  // 1차원 이하는 전치할 필요 없음
+    }
+
+    // 임시 텐서 생성
+    Tensor temp = transpose();
+
+    // 자기 자신으로 이동
+    *this = std::move(temp);
+}
+
+size_t Tensor::get_shape_size() const
+{
+    return shape_size_;
+}
+
+void Tensor::matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols, const float* b, size_t b_rows,
+                                 size_t b_cols, float* c, size_t c_rows, size_t c_cols) const
+{
+    USHIONN_ASSERT(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
+    USHIONN_ASSERT(a_rows == c_rows && b_cols == c_cols, "결과 행렬 차원이 맞지 않습니다");
+
+    // 결과 행렬 초기화
+    std::fill(c, c + c_rows * c_cols, 0.0f);
+
+    // 블록 크기 (캐시 최적화)
+    const size_t BLOCK_SIZE = 64;
+
+    // 블록별로 계산 (더 캐시 친화적)
+    for (size_t ii = 0; ii < a_rows; ii += BLOCK_SIZE)
+    {
+        for (size_t jj = 0; jj < b_cols; jj += BLOCK_SIZE)
+        {
+            for (size_t kk = 0; kk < a_cols; kk += BLOCK_SIZE)
+            {
+                // 실제 블록 범위 계산
+                size_t i_end = std::min(ii + BLOCK_SIZE, a_rows);
+                size_t j_end = std::min(jj + BLOCK_SIZE, b_cols);
+                size_t k_end = std::min(kk + BLOCK_SIZE, a_cols);
+
+                // 블록 내 계산
+                for (size_t i = ii; i < i_end; ++i)
+                {
+                    for (size_t k = kk; k < k_end; ++k)
+                    {
+                        float a_ik = a[i * a_cols + k];
+                        for (size_t j = jj; j < j_end; ++j)
+                        {
+                            c[i * c_cols + j] += a_ik * b[k * b_cols + j];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Tensor::matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols, const double* b, size_t b_rows,
+                                 size_t b_cols, double* c, size_t c_rows, size_t c_cols) const
+{
+    USHIONN_ASSERT(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
+    USHIONN_ASSERT(a_rows == c_rows && b_cols == c_cols, "결과 행렬 차원이 맞지 않습니다");
+
+    // 결과 행렬 초기화
+    std::fill(c, c + c_rows * c_cols, 0.0f);
+
+    // 블록 크기 (캐시 최적화)
+    const size_t BLOCK_SIZE = 64;
+
+    // 블록별로 계산 (더 캐시 친화적)
+    for (size_t ii = 0; ii < a_rows; ii += BLOCK_SIZE)
+    {
+        for (size_t jj = 0; jj < b_cols; jj += BLOCK_SIZE)
+        {
+            for (size_t kk = 0; kk < a_cols; kk += BLOCK_SIZE)
+            {
+                // 실제 블록 범위 계산
+                size_t i_end = std::min(ii + BLOCK_SIZE, a_rows);
+                size_t j_end = std::min(jj + BLOCK_SIZE, b_cols);
+                size_t k_end = std::min(kk + BLOCK_SIZE, a_cols);
+
+                // 블록 내 계산
+                for (size_t i = ii; i < i_end; ++i)
+                {
+                    for (size_t k = kk; k < k_end; ++k)
+                    {
+                        float a_ik = a[i * a_cols + k];
+                        for (size_t j = jj; j < j_end; ++j)
+                        {
+                            c[i * c_cols + j] += a_ik * b[k * b_cols + j];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Tensor::dot_cpu_batched(const Tensor& b, Tensor& r) const
+{
+    USHIONN_ASSERT(location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
+    USHIONN_ASSERT(b.location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
+    USHIONN_ASSERT(r.location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
+
+    // 배치 크기 계산
+    size_t batch_size = 1;
+    for (size_t i = 0; i < shape_size_ - 2; ++i)
+    {
+        batch_size *= shape_[i];
+    }
+
+    // 행렬 차원
+    size_t m = shape_[shape_size_ - 2];      // A의 행
+    size_t k = shape_[shape_size_ - 1];      // A의 열 = B의 행
+    size_t n = b.shape_[b.shape_size_ - 1];  // B의 열
+
+    if (type_ == DataType::FLOAT32)
+    {
+        const float* a_data = static_cast<const float*>(cpu_data_ptr_.get());
+        const float* b_data = static_cast<const float*>(b.cpu_data_ptr_.get());
+        float* r_data = static_cast<float*>(r.cpu_data_ptr_.get());
+
+        // 각 배치에 대해 행렬 곱셈 수행
+        for (size_t batch = 0; batch < batch_size; ++batch)
+        {
+            size_t offset_a = batch * m * k;
+            size_t offset_b = batch * k * n;
+            size_t offset_c = batch * m * n;
+
+            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k, n, r_data + offset_c, m, n);
+        }
+    }
+    else if (type_ == DataType::FLOAT64)
+    {
+        const double* a_data = static_cast<const double*>(cpu_data_ptr_.get());
+        const double* b_data = static_cast<const double*>(b.cpu_data_ptr_.get());
+        double* r_data = static_cast<double*>(r.cpu_data_ptr_.get());
+
+        for (size_t batch = 0; batch < batch_size; ++batch)
+        {
+            size_t offset_a = batch * m * k;
+            size_t offset_b = batch * k * n;
+            size_t offset_c = batch * m * n;
+
+            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k, n, r_data + offset_c, m, n);
+        }
+    }
+}
+
+std::vector<size_t> Tensor::calculate_dot_result_shape(const Tensor& b) const
+{
+    std::vector<size_t> result_shape;
+
+    if (shape_size_ == 2 && b.shape_size_ == 2)
+    {
+        // 2D × 2D = 2D
+        result_shape = {shape_[0], b.shape_[1]};
+    }
+    else
+    {
+        // 배치 차원들 계산
+        size_t batch_dims_a = shape_size_ - 2;
+        size_t batch_dims_b = b.shape_size_ - 2;
+        size_t max_batch_dims = std::max(batch_dims_a, batch_dims_b);
+
+        // 브로드캐스팅 규칙 적용
+        for (size_t i = 0; i < max_batch_dims; ++i)
+        {
+            size_t dim_a = (i < batch_dims_a) ? shape_[i] : 1;
+            size_t dim_b = (i < batch_dims_b) ? b.shape_[i] : 1;
+
+            if (dim_a == 1)
+            {
+                result_shape.push_back(dim_b);
+            }
+            else if (dim_b == 1)
+            {
+                result_shape.push_back(dim_a);
+            }
+            else if (dim_a == dim_b)
+            {
+                result_shape.push_back(dim_a);
+            }
+            else
+            {
+                USHIONN_ASSERT(false, "브로드캐스팅 차원이 맞지 않습니다");
+            }
+        }
+
+        // 마지막 2차원 추가
+        result_shape.push_back(shape_[shape_size_ - 2]);      // A의 행
+        result_shape.push_back(b.shape_[b.shape_size_ - 1]);  // B의 열
+    }
+
+    return result_shape;
+}
+
+Tensor Tensor::dot(const Tensor& b)
+{
+    USHIONN_ASSERT(shape_size_ >= 2 && b.shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
+    USHIONN_ASSERT(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2], "행렬 곱셈 차원이 맞지 않습니다");
+    USHIONN_ASSERT(location_ == b.location_, "데이터 위치가 동일해야 합니다");
+
+    // 결과 차원 계산
+    std::vector<size_t> result_shape = calculate_dot_result_shape(b);
+
+    // 임시 텐서 생성
+    Tensor temp_result(result_shape, type_);
+
+    if (location_ == DataLocation::DEVICE)
+    {
+        temp_result.allocate_gpu_mem(temp_result.get_total_bytes());
+        temp_result.location_ = DataLocation::DEVICE;
+    }
+    else
+    {
+        temp_result.allocate_cpu_mem(temp_result.get_total_bytes());
+        temp_result.location_ = DataLocation::HOST;
+    }
+
+    // 행렬곱 수행
+    dot(b, temp_result);
+
+    return temp_result;
+}
+void Tensor::dot(const Tensor& b, Tensor& r) const
+{
+    USHIONN_ASSERT(shape_size_ >= 2 && b.shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
+    USHIONN_ASSERT(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2], "행렬 곱셈 차원이 맞지 않습니다");
+
+    if (shape_size_ == 2 && b.shape_size_ == 2)
+    {
+        // 일반 2D 행렬 곱셈
+        gemm_2d(b, r);
+    }
+    else if (shape_size_ >= 3 || b.shape_size_ >= 3)
+    {
+        // 배치 행렬 곱셈
+        if (location_ == DataLocation::DEVICE)
+        {
+            gemm_strided_batched(b, r);
+        }
+        else
+        {
+            dot_cpu_batched(b, r);
+        }
     }
 }
 
