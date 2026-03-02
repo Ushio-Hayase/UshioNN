@@ -64,16 +64,6 @@ class Tensor
 
     Tensor operator=(Tensor&& other);
 
-    /// @brief 두 텐서를 더합니다.
-    /// @param b 더할 텐서
-    /// @param r 결과 텐서
-    void add(const Tensor& b, Tensor& r);
-
-    /// @brief 두 텐서의 각 원소끼리 곱합니다.
-    /// @param b 곱할 텐서
-    /// @param r 결과 텐서
-    void multiply(const Tensor& b, Tensor& r);
-
     template <typename T> void multiply(const T& b, Tensor& r);
 
     Tensor dot(const Tensor& b);
@@ -197,5 +187,8 @@ class Tensor
     DataLocation location_ = DataLocation::NONE;
     DataType type_;
 };
+
+Tensor operator+(const Tensor& lhs, const Tensor& rhs);
+Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
 } // namespace ushionn
