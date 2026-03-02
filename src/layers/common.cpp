@@ -1,15 +1,16 @@
-#include "core/common.h"  // src/core/common.cpp
+#include "utils/common.h"
 
 namespace ushionn
 {
-namespace internal
+namespace utils
 {
 
-void handleErrorInternal(const char* file, int line, const char* func_name, const std::string& error_message,
-                         bool is_fatal)
+void handleErrorInternal(const char* file, int line, const char* func_name,
+                         const std::string& error_message, bool is_fatal)
 {
     std::ostringstream oss;
-    oss << "[" << (is_fatal ? "FATAL ERROR" : "ERROR") << "] " << error_message << std::endl;
+    oss << "[" << (is_fatal ? "FATAL ERROR" : "ERROR") << "] " << error_message
+        << std::endl;
     oss << "  Location: " << file << ":" << line << " (" << func_name << ")";
 
     std::cerr << oss.str() << std::endl;
@@ -20,11 +21,6 @@ void handleErrorInternal(const char* file, int line, const char* func_name, cons
         // 또는 std::abort();
     }
 }
-
-}  // namespace internal
-
-namespace utils
-{
 
 std::string formatBytes(size_t bytes)
 {

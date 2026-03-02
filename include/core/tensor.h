@@ -7,12 +7,14 @@
 #include <stdexcept>
 #include <vector>
 
-#include "core/common.h"      // USHIONN_ASSERT 등
+#include "core/common.h"
 #include "cuda/cuda_utils.h"  // CUDA_CHECK 등 (common.h를 통해 포함됨)
+#include "utils/common.h"
+#include "utils/log_macro.h"
 
 template <typename T>
-concept ScalarType =
-    std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, int> || std::is_same_v<T, long>;
+concept ScalarType = std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                     std::is_same_v<T, int> || std::is_same_v<T, long>;
 
 namespace ushionn
 {
@@ -145,10 +147,12 @@ class Tensor
             switch (type)
             {
                 case DataType::FLOAT32:
-                    deleter_func = [](void* ptr) { delete[] static_cast<float*>(ptr); };
+                    deleter_func = [](void* ptr)
+                    { delete[] static_cast<float*>(ptr); };
                     break;
                 case DataType::FLOAT64:
-                    deleter_func = [](void* ptr) { delete[] static_cast<double*>(ptr); };
+                    deleter_func = [](void* ptr)
+                    { delete[] static_cast<double*>(ptr); };
                     break;
             }
         }
@@ -175,11 +179,13 @@ class Tensor
 
     void dot_cpu_batched(const Tensor& b, Tensor& r) const;
 
-    void matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols, const float* b, size_t b_rows, size_t b_cols,
+    void matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols,
+                             const float* b, size_t b_rows, size_t b_cols,
                              float* c, size_t c_rows, size_t c_cols) const;
 
-    void matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols, const double* b, size_t b_rows,
-                             size_t b_cols, double* c, size_t c_rows, size_t c_cols) const;
+    void matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols,
+                             const double* b, size_t b_rows, size_t b_cols,
+                             double* c, size_t c_rows, size_t c_cols) const;
 
     void transpose_cpu(Tensor& r) const;
     void transpose_gpu(Tensor& r) const;

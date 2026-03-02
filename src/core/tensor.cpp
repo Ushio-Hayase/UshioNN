@@ -2,20 +2,27 @@
 
 #include <cuda_runtime.h>  // for cudaMemcpy, cudaMemset etc.
 
-#include <atomic>  // for generate_unique_id_internal
-#include <concepts>
+#include <algorithm>
 #include <iostream>  // for print_meta_info
+
+#include "utils/log_macro.h"
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
 
 namespace ushionn
 {
 
 // --- 생성자 구현 ---
-Tensor::Tensor()
-{
-    cublasCreate(&cublas_handle_);
-}
+Tensor::Tensor() { cublasCreate(&cublas_handle_); }
 
-Tensor::Tensor(std::vector<size_t> shape, DataType type) : cpu_data_ptr_(nullptr, type), shape_(shape)
+Tensor::Tensor(std::vector<size_t> shape, DataType type)
+    : cpu_data_ptr_(nullptr, type), shape_(shape)
 {
     cublasCreate(&cublas_handle_);
     cudaThreadSynchronize();
@@ -40,7 +47,7 @@ Tensor::Tensor(std::vector<size_t> shape, const T* ptr)
     cublasCreate(&cublas_handle_);
     cudaThreadSynchronize();
 
-    std::copy(shape.begin(), shape.end(), shape_);
+    std::copy(shape.begin(), shape.end(), shape_.begin());
 
     shape_size_ = shape_.size();
     total_bytes_ = std::accumulate(shape.begin(), shape.end(), 0) * sizeof(T);
@@ -53,7 +60,8 @@ Tensor::Tensor(std::vector<size_t> shape, const T* ptr)
     location_ = DataLocation::HOST;
 }
 
-Tensor::Tensor(std::vector<size_t> shape, void* gpu_ptr, DataType type) : cpu_data_ptr_(nullptr, type), shape_(shape)
+Tensor::Tensor(std::vector<size_t> shape, void* gpu_ptr, DataType type)
+    : cpu_data_ptr_(nullptr, type), shape_(shape)
 {
     cublasCreate(&cublas_handle_);
     cudaThreadSynchronize();
@@ -62,9 +70,11 @@ Tensor::Tensor(std::vector<size_t> shape, void* gpu_ptr, DataType type) : cpu_da
     type_ = type;
 
     if (type == DataType::FLOAT32)
-        total_bytes_ = std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(float);
+        total_bytes_ =
+            std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(float);
     else if (type == DataType::FLOAT64)
-        total_bytes_ = std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(double);
+        total_bytes_ =
+            std::accumulate(shape.begin(), shape.end(), 0ULL) * sizeof(double);
 
     location_ = DataLocation::DEVICE;
 
@@ -72,7 +82,8 @@ Tensor::Tensor(std::vector<size_t> shape, void* gpu_ptr, DataType type) : cpu_da
 }
 
 Tensor::Tensor(Tensor&& other)
-    : cpu_data_ptr_(std::move(other.cpu_data_ptr_)), gpu_data_ptr_(std::move(other.gpu_data_ptr_))
+    : cpu_data_ptr_(std::move(other.cpu_data_ptr_)),
+      gpu_data_ptr_(std::move(other.gpu_data_ptr_))
 {
     cublas_handle_ = other.cublas_handle_;
     total_bytes_ = other.total_bytes_;
@@ -85,8 +96,10 @@ Tensor::Tensor(Tensor&& other)
 
 Tensor Tensor::operator+(const Tensor& other)
 {
-    USHIONN_ASSERT(location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
-    USHIONN_ASSERT(other.location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(other.location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
 
     Tensor result(this->shape_, type_);
     result.allocate_cpu_mem(total_bytes_);
@@ -96,8 +109,10 @@ Tensor Tensor::operator+(const Tensor& other)
 
 Tensor& Tensor::operator+=(const Tensor& other)
 {
-    USHIONN_ASSERT(location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
-    USHIONN_ASSERT(other.location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(other.location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
 
     add(other, *this);
 
@@ -106,8 +121,10 @@ Tensor& Tensor::operator+=(const Tensor& other)
 
 Tensor Tensor::operator*(const Tensor& other)
 {
-    USHIONN_ASSERT(location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
-    USHIONN_ASSERT(other.location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(other.location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
 
     Tensor result(this->shape_, type_);
     result.allocate_cpu_mem(total_bytes_);
@@ -122,7 +139,8 @@ Tensor Tensor::operator*(const T& scalar)
 {
     static_assert(std::is_arithmetic_v<T>, "스칼라는 숫자 타입이여야 합니다.");
 
-    USHIONN_ASSERT(location_ != DataLocation::NONE, "텐서가 할당되지 않았습니다.");
+    ASSERT_MESSAGE(location_ != DataLocation::NONE,
+                   "텐서가 할당되지 않았습니다.");
 
     Tensor result(this->shape_, type_);
 
@@ -158,7 +176,8 @@ void Tensor::allocate_gpu_mem(size_t total_bytes)
 {
     total_bytes_ = total_bytes;
 
-    if (!gpu_data_ptr_) USHIONN_WARN("Gpu memory is already allocated. Ignore the command");
+    if (!gpu_data_ptr_)
+        LOG_WARN("Gpu memory is already allocated. Ignore the command");
 
     if (!gpu_data_ptr_)
     {
@@ -181,7 +200,8 @@ void Tensor::allocate_cpu_mem(size_t total_bytes)
 {
     total_bytes_ = total_bytes;
 
-    if (!cpu_data_ptr_) USHIONN_WARN("Cpu memory is already allocated. Ignore the command");
+    if (!cpu_data_ptr_)
+        LOG_WARN("Cpu memory is already allocated. Ignore the command");
 
     if (!cpu_data_ptr_)
     {
@@ -201,77 +221,63 @@ void Tensor::to(DataLocation location)
         else if (type_ == DataType::FLOAT64)
             cpu_data_ptr_.reset(new double[total_bytes_ / sizeof(double)]);
 
-        auto status = cudaMemcpy(cpu_data_ptr_.get(), gpu_data_ptr_.get(), total_bytes_, cudaMemcpyDeviceToHost);
+        auto status = cudaMemcpy(cpu_data_ptr_.get(), gpu_data_ptr_.get(),
+                                 total_bytes_, cudaMemcpyDeviceToHost);
 
-        USHIONN_ASSERT(status == cudaSuccess, "cudaMemcpy 오류, code : " + status);
+        ASSERT_MESSAGE(status == cudaSuccess,
+                       "cudaMemcpy 오류, code : " + status);
 
         gpu_data_ptr_.reset(nullptr);
         location_ = DataLocation::HOST;
     }
-    else if (location == DataLocation::DEVICE && location_ != DataLocation::DEVICE)
+    else if (location == DataLocation::DEVICE &&
+             location_ != DataLocation::DEVICE)
     {
         void* tmp_ptr = nullptr;
         auto status1 = cudaMalloc(&tmp_ptr, total_bytes_);
         gpu_data_ptr_.reset(tmp_ptr);
 
-        USHIONN_ASSERT(status1 == cudaSuccess, "cudaMalloc 오류, code : " + status1);
+        ASSERT_MESSAGE(status1 == cudaSuccess,
+                       "cudaMalloc 오류, code : " + status1);
 
-        auto status2 = cudaMemcpy(gpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_, cudaMemcpyHostToDevice);
+        auto status2 = cudaMemcpy(gpu_data_ptr_.get(), cpu_data_ptr_.get(),
+                                  total_bytes_, cudaMemcpyHostToDevice);
 
-        USHIONN_ASSERT(status2 == cudaSuccess, "cudaMemcpy 오류, code : " + status2);
+        ASSERT_MESSAGE(status2 == cudaSuccess,
+                       "cudaMemcpy 오류, code : " + status2);
 
         cpu_data_ptr_.reset(nullptr);
         location_ = DataLocation::DEVICE;
     }
 }
 
-std::vector<size_t> Tensor::get_shape() const
-{
-    return shape_;
-}
+std::vector<size_t> Tensor::get_shape() const { return shape_; }
 
-DataLocation Tensor::get_device() const
-{
-    return location_;
-}
+DataLocation Tensor::get_device() const { return location_; }
 
-DataType Tensor::get_type() const
-{
-    return type_;
-}
+DataType Tensor::get_type() const { return type_; }
 
-size_t Tensor::get_total_bytes() const
-{
-    return total_bytes_;
-}
+size_t Tensor::get_total_bytes() const { return total_bytes_; }
 
-const void* const Tensor::get_cpu_ptr() const
-{
-    return cpu_data_ptr_.get();
-}
+const void* const Tensor::get_cpu_ptr() const { return cpu_data_ptr_.get(); }
 
-const void* const Tensor::get_gpu_ptr() const
-{
-    return gpu_data_ptr_.get();
-}
+const void* const Tensor::get_gpu_ptr() const { return gpu_data_ptr_.get(); }
 
-void* const Tensor::get_cpu_ptr_mutable()
-{
-    return cpu_data_ptr_.get();
-}
+void* const Tensor::get_cpu_ptr_mutable() { return cpu_data_ptr_.get(); }
 
-void* const Tensor::get_gpu_ptr_mutable()
-{
-    return gpu_data_ptr_.get();
-}
+void* const Tensor::get_gpu_ptr_mutable() { return gpu_data_ptr_.get(); }
 
 void Tensor::add(const Tensor& b, Tensor& r)
 {
-    USHIONN_ASSERT(shape_ == b.shape_, "The dimension of the tensor calculating does not match");
-    USHIONN_ASSERT(shape_ == r.shape_, "The dimension of the tensor calculating does not match");
+    ASSERT_MESSAGE(shape_ == b.shape_,
+                   "The dimension of the tensor calculating does not match");
+    ASSERT_MESSAGE(shape_ == r.shape_,
+                   "The dimension of the tensor calculating does not match");
 
-    USHIONN_ASSERT(location_ == b.location_, "The location of the data exists must be the same.");
-    USHIONN_ASSERT(location_ == r.location_, "The location of the data exists must be the same.");
+    ASSERT_MESSAGE(location_ == b.location_,
+                   "The location of the data exists must be the same.");
+    ASSERT_MESSAGE(location_ == r.location_,
+                   "The location of the data exists must be the same.");
 
     if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT32)
     {
@@ -284,13 +290,15 @@ void Tensor::add(const Tensor& b, Tensor& r)
         else
             row = 1;
         size_t col = shape_[shape_size_ - 1];
-        auto state = cublasSgeam(r.cublas_handle_, CUBLAS_OP_N, CUBLAS_OP_N, row, col, &alpha,
-                                 static_cast<const float*>(gpu_data_ptr_.get()), row, &beta,
-                                 static_cast<const float*>(b.gpu_data_ptr_.get()), row,
-                                 static_cast<float*>(r.gpu_data_ptr_.get()), row);
+        auto state = cublasSgeam(
+            r.cublas_handle_, CUBLAS_OP_N, CUBLAS_OP_N, row, col, &alpha,
+            static_cast<const float*>(gpu_data_ptr_.get()), row, &beta,
+            static_cast<const float*>(b.gpu_data_ptr_.get()), row,
+            static_cast<float*>(r.gpu_data_ptr_.get()), row);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem adding tensor, Error state : " << state << std::endl;
+            std::cerr << "There was a problem adding tensor, Error state : "
+                      << state << std::endl;
     }
     else if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT64)
     {
@@ -303,13 +311,15 @@ void Tensor::add(const Tensor& b, Tensor& r)
         else
             row = 1;
         size_t col = shape_[shape_size_ - 1];
-        auto state = cublasDgeam(r.cublas_handle_, CUBLAS_OP_N, CUBLAS_OP_N, row, col, &alpha,
-                                 static_cast<const double*>(gpu_data_ptr_.get()), row, &beta,
-                                 static_cast<const double*>(b.gpu_data_ptr_.get()), row,
-                                 static_cast<double*>(r.gpu_data_ptr_.get()), row);
+        auto state = cublasDgeam(
+            r.cublas_handle_, CUBLAS_OP_N, CUBLAS_OP_N, row, col, &alpha,
+            static_cast<const double*>(gpu_data_ptr_.get()), row, &beta,
+            static_cast<const double*>(b.gpu_data_ptr_.get()), row,
+            static_cast<double*>(r.gpu_data_ptr_.get()), row);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem adding tensor, Error state : " << state << std::endl;
+            std::cerr << "There was a problem adding tensor, Error state : "
+                      << state << std::endl;
     }
     else if (location_ == DataLocation::HOST)
     {
@@ -320,8 +330,10 @@ void Tensor::add(const Tensor& b, Tensor& r)
 template <typename T>
 void Tensor::multiply(const T& b, Tensor& r)
 {
-    USHIONN_ASSERT(shape_ == r.shape_, "The dimension of the tensor calculating does not match");
-    USHIONN_ASSERT(location_ == r.location_, "The location of the data exists must be the same.");
+    USHIONN_ASSERT(shape_ == r.shape_,
+                   "The dimension of the tensor calculating does not match");
+    USHIONN_ASSERT(location_ == r.location_,
+                   "The location of the data exists must be the same.");
 
     if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT32)
     {
@@ -333,11 +345,13 @@ void Tensor::multiply(const T& b, Tensor& r)
 
         // 타입 안전한 변환
         float scalar_f = static_cast<float>(b);
-        auto state =
-            cublasSscal(r.cublas_handle_, total_elements, &scalar_f, static_cast<float*>(gpu_data_ptr_.get()), 1);
+        auto state = cublasSscal(r.cublas_handle_, total_elements, &scalar_f,
+                                 static_cast<float*>(gpu_data_ptr_.get()), 1);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem multiplying tensor, Error state : " << state << std::endl;
+            std::cerr
+                << "There was a problem multiplying tensor, Error state : "
+                << state << std::endl;
     }
     else if (location_ == DataLocation::DEVICE && type_ == DataType::FLOAT64)
     {
@@ -349,11 +363,13 @@ void Tensor::multiply(const T& b, Tensor& r)
 
         // 타입 안전한 변환
         double scalar_d = static_cast<double>(b);
-        auto state =
-            cublasDscal(r.cublas_handle_, total_elements, &scalar_d, static_cast<double*>(gpu_data_ptr_.get()), 1);
+        auto state = cublasDscal(r.cublas_handle_, total_elements, &scalar_d,
+                                 static_cast<double*>(gpu_data_ptr_.get()), 1);
 
         if (state != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "There was a problem multiplying tensor, Error state : " << state << std::endl;
+            std::cerr
+                << "There was a problem multiplying tensor, Error state : "
+                << state << std::endl;
     }
     else if (location_ == DataLocation::HOST)
     {
@@ -385,7 +401,8 @@ void Tensor::add_cpu(const Tensor& b, Tensor& r)
     else if (type_ == DataType::FLOAT64)
     {
         const double* a_data = static_cast<const double*>(cpu_data_ptr_.get());
-        const double* b_data = static_cast<const double*>(b.cpu_data_ptr_.get());
+        const double* b_data =
+            static_cast<const double*>(b.cpu_data_ptr_.get());
         double* r_data = static_cast<double*>(r.cpu_data_ptr_.get());
 
         for (size_t i = 0; i < total_elements; ++i)
@@ -449,7 +466,7 @@ void Tensor::calculate_strides()
 
 void Tensor::transpose_cpu(Tensor& r) const
 {
-    USHIONN_ASSERT(shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
+    ASSERT_MESSAGE(shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
 
     // 배치 크기 계산
     size_t batch_size = 1;
@@ -476,7 +493,8 @@ void Tensor::transpose_cpu(Tensor& r) const
                 for (size_t j = 0; j < cols; ++j)
                 {
                     // (i, j) -> (j, i)
-                    output[batch_offset_output + j * rows + i] = input[batch_offset_input + i * cols + j];
+                    output[batch_offset_output + j * rows + i] =
+                        input[batch_offset_input + i * cols + j];
                 }
             }
         }
@@ -496,7 +514,8 @@ void Tensor::transpose_cpu(Tensor& r) const
                 for (size_t j = 0; j < cols; ++j)
                 {
                     // (i, j) -> (j, i)
-                    output[batch_offset_output + j * rows + i] = input[batch_offset_input + i * cols + j];
+                    output[batch_offset_output + j * rows + i] =
+                        input[batch_offset_input + i * cols + j];
                 }
             }
         }
@@ -505,7 +524,8 @@ void Tensor::transpose_cpu(Tensor& r) const
 
 Tensor Tensor::permute(size_t dim1, size_t dim2)
 {
-    USHIONN_ASSERT(dim1 < shape_size_ && dim2 < shape_size_, "차원 인덱스가 유효하지 않습니다");
+    ASSERT_MESSAGE(dim1 < shape_size_ && dim2 < shape_size_,
+                   "차원 인덱스가 유효하지 않습니다");
 
     if (dim1 == dim2)
     {
@@ -515,13 +535,15 @@ Tensor Tensor::permute(size_t dim1, size_t dim2)
         {
             result.allocate_gpu_mem(total_bytes_);
             result.location_ = DataLocation::DEVICE;
-            cudaMemcpy(result.gpu_data_ptr_.get(), gpu_data_ptr_.get(), total_bytes_, cudaMemcpyDeviceToDevice);
+            cudaMemcpy(result.gpu_data_ptr_.get(), gpu_data_ptr_.get(),
+                       total_bytes_, cudaMemcpyDeviceToDevice);
         }
         else
         {
             result.allocate_cpu_mem(total_bytes_);
             result.location_ = DataLocation::HOST;
-            std::memcpy(result.cpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_);
+            std::memcpy(result.cpu_data_ptr_.get(), cpu_data_ptr_.get(),
+                        total_bytes_);
         }
         return result;
     }
@@ -544,7 +566,8 @@ Tensor Tensor::permute(size_t dim1, size_t dim2)
     }
 
     // 마지막 2차원 교환인 경우 최적화된 transpose 사용
-    if ((dim1 == shape_size_ - 2 && dim2 == shape_size_ - 1) || (dim1 == shape_size_ - 1 && dim2 == shape_size_ - 2))
+    if ((dim1 == shape_size_ - 2 && dim2 == shape_size_ - 1) ||
+        (dim1 == shape_size_ - 1 && dim2 == shape_size_ - 2))
     {
         if (location_ == DataLocation::DEVICE)
         {
@@ -695,10 +718,11 @@ Tensor Tensor::transpose() const
 
 void Tensor::transpose(Tensor& r)
 {
-    USHIONN_ASSERT(location_ == r.location_, "데이터 위치가 동일해야 합니다");
+    ASSERT_MESSAGE(location_ == r.location_, "데이터 위치가 동일해야 합니다");
 
     std::vector<size_t> expected_shape = calculate_transpose_shape();
-    USHIONN_ASSERT(r.shape_ == expected_shape, "결과 텐서의 차원이 전치 결과와 맞지 않습니다");
+    ASSERT_MESSAGE(r.shape_ == expected_shape,
+                   "결과 텐서의 차원이 전치 결과와 맞지 않습니다");
 
     if (location_ == DataLocation::DEVICE)
     {
@@ -724,16 +748,15 @@ void Tensor::transpose_()
     *this = std::move(temp);
 }
 
-size_t Tensor::get_shape_size() const
-{
-    return shape_size_;
-}
+size_t Tensor::get_shape_size() const { return shape_size_; }
 
-void Tensor::matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols, const float* b, size_t b_rows,
-                                 size_t b_cols, float* c, size_t c_rows, size_t c_cols) const
+void Tensor::matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols,
+                                 const float* b, size_t b_rows, size_t b_cols,
+                                 float* c, size_t c_rows, size_t c_cols) const
 {
-    USHIONN_ASSERT(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
-    USHIONN_ASSERT(a_rows == c_rows && b_cols == c_cols, "결과 행렬 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(a_rows == c_rows && b_cols == c_cols,
+                   "결과 행렬 차원이 맞지 않습니다");
 
     // 결과 행렬 초기화
     std::fill(c, c + c_rows * c_cols, 0.0f);
@@ -749,9 +772,9 @@ void Tensor::matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols, c
             for (size_t kk = 0; kk < a_cols; kk += BLOCK_SIZE)
             {
                 // 실제 블록 범위 계산
-                size_t i_end = std::min(ii + BLOCK_SIZE, a_rows);
-                size_t j_end = std::min(jj + BLOCK_SIZE, b_cols);
-                size_t k_end = std::min(kk + BLOCK_SIZE, a_cols);
+                size_t i_end = ::std::min(ii + BLOCK_SIZE, a_rows);
+                size_t j_end = ::std::min(jj + BLOCK_SIZE, b_cols);
+                size_t k_end = ::std::min(kk + BLOCK_SIZE, a_cols);
 
                 // 블록 내 계산
                 for (size_t i = ii; i < i_end; ++i)
@@ -770,11 +793,13 @@ void Tensor::matrix_multiply_cpu(const float* a, size_t a_rows, size_t a_cols, c
     }
 }
 
-void Tensor::matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols, const double* b, size_t b_rows,
-                                 size_t b_cols, double* c, size_t c_rows, size_t c_cols) const
+void Tensor::matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols,
+                                 const double* b, size_t b_rows, size_t b_cols,
+                                 double* c, size_t c_rows, size_t c_cols) const
 {
-    USHIONN_ASSERT(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
-    USHIONN_ASSERT(a_rows == c_rows && b_cols == c_cols, "결과 행렬 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(a_cols == b_rows, "행렬 곱셈 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(a_rows == c_rows && b_cols == c_cols,
+                   "결과 행렬 차원이 맞지 않습니다");
 
     // 결과 행렬 초기화
     std::fill(c, c + c_rows * c_cols, 0.0f);
@@ -790,9 +815,9 @@ void Tensor::matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols, 
             for (size_t kk = 0; kk < a_cols; kk += BLOCK_SIZE)
             {
                 // 실제 블록 범위 계산
-                size_t i_end = std::min(ii + BLOCK_SIZE, a_rows);
-                size_t j_end = std::min(jj + BLOCK_SIZE, b_cols);
-                size_t k_end = std::min(kk + BLOCK_SIZE, a_cols);
+                size_t i_end = ::std::min(ii + BLOCK_SIZE, a_rows);
+                size_t j_end = ::std::min(jj + BLOCK_SIZE, b_cols);
+                size_t k_end = ::std::min(kk + BLOCK_SIZE, a_cols);
 
                 // 블록 내 계산
                 for (size_t i = ii; i < i_end; ++i)
@@ -813,9 +838,12 @@ void Tensor::matrix_multiply_cpu(const double* a, size_t a_rows, size_t a_cols, 
 
 void Tensor::dot_cpu_batched(const Tensor& b, Tensor& r) const
 {
-    USHIONN_ASSERT(location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
-    USHIONN_ASSERT(b.location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
-    USHIONN_ASSERT(r.location_ == DataLocation::HOST, "CPU 배치 연산은 HOST 데이터여야 합니다");
+    ASSERT_MESSAGE(location_ == DataLocation::HOST,
+                   "CPU 배치 연산은 HOST 데이터여야 합니다");
+    ASSERT_MESSAGE(b.location_ == DataLocation::HOST,
+                   "CPU 배치 연산은 HOST 데이터여야 합니다");
+    ASSERT_MESSAGE(r.location_ == DataLocation::HOST,
+                   "CPU 배치 연산은 HOST 데이터여야 합니다");
 
     // 배치 크기 계산
     size_t batch_size = 1;
@@ -842,13 +870,15 @@ void Tensor::dot_cpu_batched(const Tensor& b, Tensor& r) const
             size_t offset_b = batch * k * n;
             size_t offset_c = batch * m * n;
 
-            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k, n, r_data + offset_c, m, n);
+            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k,
+                                n, r_data + offset_c, m, n);
         }
     }
     else if (type_ == DataType::FLOAT64)
     {
         const double* a_data = static_cast<const double*>(cpu_data_ptr_.get());
-        const double* b_data = static_cast<const double*>(b.cpu_data_ptr_.get());
+        const double* b_data =
+            static_cast<const double*>(b.cpu_data_ptr_.get());
         double* r_data = static_cast<double*>(r.cpu_data_ptr_.get());
 
         for (size_t batch = 0; batch < batch_size; ++batch)
@@ -857,7 +887,8 @@ void Tensor::dot_cpu_batched(const Tensor& b, Tensor& r) const
             size_t offset_b = batch * k * n;
             size_t offset_c = batch * m * n;
 
-            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k, n, r_data + offset_c, m, n);
+            matrix_multiply_cpu(a_data + offset_a, m, k, b_data + offset_b, k,
+                                n, r_data + offset_c, m, n);
         }
     }
 }
@@ -898,7 +929,7 @@ std::vector<size_t> Tensor::calculate_dot_result_shape(const Tensor& b) const
             }
             else
             {
-                USHIONN_ASSERT(false, "브로드캐스팅 차원이 맞지 않습니다");
+                ASSERT_MESSAGE(false, "브로드캐스팅 차원이 맞지 않습니다");
             }
         }
 
@@ -912,9 +943,11 @@ std::vector<size_t> Tensor::calculate_dot_result_shape(const Tensor& b) const
 
 Tensor Tensor::dot(const Tensor& b)
 {
-    USHIONN_ASSERT(shape_size_ >= 2 && b.shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
-    USHIONN_ASSERT(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2], "행렬 곱셈 차원이 맞지 않습니다");
-    USHIONN_ASSERT(location_ == b.location_, "데이터 위치가 동일해야 합니다");
+    ASSERT_MESSAGE(shape_size_ >= 2 && b.shape_size_ >= 2,
+                   "최소 2차원 텐서여야 합니다");
+    ASSERT_MESSAGE(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2],
+                   "행렬 곱셈 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(location_ == b.location_, "데이터 위치가 동일해야 합니다");
 
     // 결과 차원 계산
     std::vector<size_t> result_shape = calculate_dot_result_shape(b);
@@ -940,8 +973,10 @@ Tensor Tensor::dot(const Tensor& b)
 }
 void Tensor::dot(const Tensor& b, Tensor& r) const
 {
-    USHIONN_ASSERT(shape_size_ >= 2 && b.shape_size_ >= 2, "최소 2차원 텐서여야 합니다");
-    USHIONN_ASSERT(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2], "행렬 곱셈 차원이 맞지 않습니다");
+    ASSERT_MESSAGE(shape_size_ >= 2 && b.shape_size_ >= 2,
+                   "최소 2차원 텐서여야 합니다");
+    ASSERT_MESSAGE(shape_[shape_size_ - 1] == b.shape_[b.shape_size_ - 2],
+                   "행렬 곱셈 차원이 맞지 않습니다");
 
     if (shape_size_ == 2 && b.shape_size_ == 2)
     {

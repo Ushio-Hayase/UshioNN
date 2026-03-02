@@ -1,0 +1,35 @@
+BasedOnStyle: Microsoft
+
+# includes 정렬 옵션
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 구현 파일과 같은 이름의 헤더를 최상위 그룹 (예: foo.cpp 와 foo.h)
+  - Regex: '^"([^/]+)\.h"$'
+    Priority: 1
+    SortPriority: 0
+
+  # .h 확장자 일반 헤더 (구현 파일 이름이 아닌)
+  - Regex: '^".*\.h"$'
+    Priority: 2
+
+  # STL 및 시스템 헤더 (<...>), 여기서는 <*.h> 포함 가능
+  - Regex: '^<.*\.h>$'
+    Priority: 3
+
+  - Regex: '^<.*>$'
+    Priority: 4
+
+  # 기타 헤더 (예: 서드파티, 프로젝트 내부 등)
+  - Regex: '.*'
+    Priority: 5
+
+PointerAlignment: Left
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 80
+
+AllowShortFunctionsOnASingleLine: true

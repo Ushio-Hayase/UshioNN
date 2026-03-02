@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "D:/_Study/Ushionn",
+    "cmake.sourceDirectory": "D:/_Project/Ushionn",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
         "*.cuh": "cuda-cpp",

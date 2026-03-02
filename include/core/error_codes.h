@@ -12,6 +12,5 @@ enum class UshioNNError
     SUCCESS = 0,
     GENERAL_ERROR,
     CUDA_ERROR,
-    CUDNN_ERROR,
 };
 }
