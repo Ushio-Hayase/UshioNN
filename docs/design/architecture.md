@@ -231,4 +231,4 @@ for t in range(30000):
 
 print(f'Result: {model.string()}')
 ```
-
+- [pytorch 공식 예제](https://tutorials.pytorch.kr/beginner/pytorch_with_examples.html#id3)
