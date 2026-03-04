@@ -1,12 +1,14 @@
 #include "core/tensor.h"
 
+#include "utils/log_macro.h"
+
 #include <cmath>
 
 namespace nunet
 {
-Tensor::Tensor() : total_bytes_(0), shape_size_(0), type_(DataType::FP32) {}
+Tensor::Tensor() : total_bytes_(0), shape_size_(0), type_(DType::FP32) {}
 
-Tensor::Tensor(::std::vector<uint64_t> shape, DataType type)
+Tensor::Tensor(::std::vector<uint64_t> shape, DType type)
     : shape_(shape), type_(type), location_(DataLocation::HOST), total_bytes_(1)
 {
     for (const auto& size : shape_)
@@ -14,26 +16,26 @@ Tensor::Tensor(::std::vector<uint64_t> shape, DataType type)
 
     switch (type_)
     {
-    case DataType::FP64:
+    case DType::FP64:
         total_bytes_ *= 8;
         break;
-    case DataType::FP32:
+    case DType::FP32:
         total_bytes_ *= 4;
         break;
 
-    case DataType::FP16:
+    case DType::FP16:
         total_bytes_ *= 2;
         break;
-    case DataType::BF16:
+    case DType::BF16:
         total_bytes_ *= 2;
         break;
-    case DataType::FP8_e4m3:
+    case DType::FP8_e4m3:
         total_bytes_ *= 1;
         break;
-    case DataType::FP8_e5m2:
+    case DType::FP8_e5m2:
         total_bytes_ *= 1;
         break;
-    case DataType::FP4:
+    case DType::FP4:
         total_bytes_ = std::ceil(total_bytes_ / 2.0f);
         break;
     }
@@ -53,35 +55,35 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
 
     if constexpr (std::is_same_v<T, double>)
     {
-        type_ = DataType::FP64;
+        type_ = DType::FP64;
         total_bytes_ *= 8;
     }
     else if constexpr (std::is_same_v<T, float>)
     {
-        type_ = DataType::FP32;
+        type_ = DType::FP32;
         total_bytes_ *= 4;
     }
     else if constexpr (std::is_same_v<T, fp16_t>)
     {
-        type_ = DataType::FP16;
+        type_ = DType::FP16;
         total_bytes_ *= 2;
     }
     else if constexpr (std::is_same_v<T, bf16_t>)
     {
-        type_ = DataType::BF16;
+        type_ = DType::BF16;
         total_bytes_ *= 2;
     }
     else if constexpr (std::is_same_v<T, fp8_e5m2_t>)
     {
-        type_ = DataType::FP8_e5m2;
+        type_ = DType::FP8_e5m2;
     }
     else if constexpr (std::is_same_v<T, fp8_e4m3_t>)
     {
-        type_ = DataType::FP8_e4m3;
+        type_ = DType::FP8_e4m3;
     }
     else if constexpr (std::is_same_v<T, fp4_t>)
     {
-        type_ = DataType::FP4;
+        type_ = DType::FP4;
         total_bytes_ = std::ceil(total_bytes_ / 2.0f);
     }
 
@@ -94,7 +96,7 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
     std::copy(ptr, ptr + (total_bytes_ / sizeof(T)), (T*)cpu_data_ptr_.get());
 }
 
-Tensor::Tensor(const std::vector<uint64_t>& shape, void* gpu_ptr, DataType type)
+Tensor::Tensor(const std::vector<uint64_t>& shape, void* gpu_ptr, DType type)
     : shape_(shape), type_(type), location_(DataLocation::DEVICE),
       total_bytes_(1)
 {
@@ -103,26 +105,26 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, void* gpu_ptr, DataType type)
 
     switch (type_)
     {
-    case DataType::FP64:
+    case DType::FP64:
         total_bytes_ *= 8;
         break;
-    case DataType::FP32:
+    case DType::FP32:
         total_bytes_ *= 4;
         break;
 
-    case DataType::FP16:
+    case DType::FP16:
         total_bytes_ *= 2;
         break;
-    case DataType::BF16:
+    case DType::BF16:
         total_bytes_ *= 2;
         break;
-    case DataType::FP8_e4m3:
+    case DType::FP8_e4m3:
         total_bytes_ *= 1;
         break;
-    case DataType::FP8_e5m2:
+    case DType::FP8_e5m2:
         total_bytes_ *= 1;
         break;
-    case DataType::FP4:
+    case DType::FP4:
         total_bytes_ = std::ceil(total_bytes_ / 2.0f);
         break;
     }
@@ -142,5 +144,56 @@ template Tensor::Tensor(const std::vector<uint64_t>& shape,
 template Tensor::Tensor(const std::vector<uint64_t>& shape,
                         const fp8_e4m3_t* ptr);
 template Tensor::Tensor(const std::vector<uint64_t>& shape, const fp4_t* ptr);
+
+Tensor& Tensor::operator+=(const Tensor& other)
+{
+    ASSERT_MESSAGE(this->location_ != DataLocation::NONE,
+                   "Tensor not assigned.");
+    ASSERT_MESSAGE(this->type_ != other.type_,
+                   "The two tensors are of different types.");
+    ASSERT_MESSAGE(this->shape_ != other.shape_,
+                   "Two tensors have different sizes.");
+
+    if (this->location_ == DataLocation::HOST)
+    {
+        switch (type_)
+        {
+        case DType::FP64: {
+            double* this_cpu_ptr = static_cast<double*>(cpu_data_ptr_.get());
+            double* other_cpu_ptr =
+                static_cast<double*>(other.cpu_data_ptr_.get());
+            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+                *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+            break;
+        }
+        case DType::FP32: {
+            float* this_cpu_ptr = static_cast<float*>(cpu_data_ptr_.get());
+            float* other_cpu_ptr =
+                static_cast<float*>(other.cpu_data_ptr_.get());
+            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+                *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+            break;
+        }
+        case DType::FP16: {
+            fp16_t* this_cpu_ptr = static_cast<fp16_t*>(cpu_data_ptr_.get());
+            fp16_t* other_cpu_ptr =
+                static_cast<fp16_t*>(other.cpu_data_ptr_.get());
+            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+                *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+            break;
+        }
+        case DType::BF16: {
+            bf16_t* this_cpu_ptr = static_cast<bf16_t*>(cpu_data_ptr_.get());
+            bf16_t* other_cpu_ptr =
+                static_cast<bf16_t*>(other.cpu_data_ptr_.get());
+            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+                *(this_cpu_ptr + i) =
+                    *(this_cpu_ptr + i) + *(other_cpu_ptr + i);
+            break;
+        }
+        case DType::FP8_e5m2:
+        }
+    }
+}
 
 } // namespace nunet

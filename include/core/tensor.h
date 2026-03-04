@@ -18,7 +18,7 @@ class Tensor
     // --- 생성자 및 소멸자 ---
     Tensor();
 
-    Tensor(::std::vector<uint64_t> shape, DataType type = DataType::FP32);
+    Tensor(::std::vector<uint64_t> shape, DType type = DType::FP32);
 
     /// @brief HOST에 데이터를 복사하며 텐서를 생성합니다.
     /// @tparam T 자료형(FP4, FP8_e5m2, FP8_e4m3, BF16, FP16, FP32, FP64 허용)
@@ -31,11 +31,11 @@ class Tensor
     /// @param shape 차원
     /// @param gpu_ptr 참조할 DEVICE 포인터
     /// @param type 자료형
-    Tensor(const ::std::vector<uint64_t>& shape, void* gpu_ptr, DataType type);
+    Tensor(const ::std::vector<uint64_t>& shape, void* gpu_ptr, DType type);
 
     Tensor(const Tensor& other) = delete;
     Tensor operator=(const Tensor& other) = delete;
-    Tensor(Tensor&& other);
+    Tensor(Tensor&& other) = default;
     Tensor operator=(Tensor&& other);
 
     ~Tensor() = default;
@@ -53,10 +53,11 @@ class Tensor
     void allocateCpuMem(size_t total_bytes);
 
     void to(DataLocation location);
+    void to(DType type);
 
     std::vector<size_t> getShape() const;
     DataLocation getDevice() const;
-    DataType getType() const;
+    DType getType() const;
     size_t getTotalBytes() const;
     size_t getShapeSize() const;
 
@@ -127,7 +128,7 @@ class Tensor
     std::vector<size_t> strides_;
 
     DataLocation location_ = DataLocation::NONE;
-    DataType type_;
+    DType type_;
 };
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);

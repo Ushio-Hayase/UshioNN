@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #if defined(USE_CUDA)
 #include <cuda_fp16.h>
@@ -27,15 +29,15 @@
 namespace nunet
 {
 
-struct fallback_bf16
+struct FallbackBf16
 {
     uint16_t bits;
 };
-struct fallback_fp8_e4m3
+struct FallbackFp8E4m3
 {
     uint8_t bits;
 };
-struct fallback_fp8_e5m2
+struct FallbackFp8E5m2
 {
     uint8_t bits;
 };
@@ -84,11 +86,11 @@ using bf16_t = std::bfloat16_t;
 // For unsupported older compilers, replace with 16-bit integer to preserve
 // memory layout
 using fp16_t = uint16_t;
-using bf16_t = fallback_bf16;
+using bf16_t = FallbackBf16;
 #endif
 
-using fp8_e4m3_t = fallback_fp8_e4m3;
-using fp8_e5m2_t = fallback_fp8_e5m2;
+using fp8_e4m3_t = FallbackFp8E4m3;
+using fp8_e5m2_t = FallbackFp8E5m2;
 using fp4_t = uint8_t;
 
 #endif
@@ -114,7 +116,7 @@ template <typename T> struct IsScalarType
 };
 #endif
 
-enum class DataType
+enum class DType
 {
     FP4,      // fp4_t
     FP8_e5m2, // fp8_e5m2_t
@@ -124,6 +126,57 @@ enum class DataType
     FP32,     // float
     FP64,     // double
 };
+
+/**
+ * @brief Get the Dtype object
+ *
+ * @tparam T Data type to enumerate
+ * @return constexpr DType Changed enumeration type data type
+ */
+template <ScalarType T> constexpr DType getDtype()
+{
+    if constexpr (std::is_same_v<T, float>)
+        return DType::FP32;
+    else if constexpr (std::is_same_v<T, double>)
+        return DType::FP64;
+    else if constexpr (std::is_same_v<T, fp16_t>)
+        return DType::FP16;
+    else if constexpr (std::is_same_v<T, bf16_t>)
+        return DType::BF16;
+    else if constexpr (std::is_same_v<T, fp8_e4m3_t>)
+        return DType::FP8_e4m3;
+    else if constexpr (std::is_same_v<T, fp8_e5m2_t>)
+        return DType::FP8_e5m2;
+    else if constexpr (std::is_same_v<T, fp4_t>)
+        return DType::FP4;
+    else
+    {
+        static_assert(sizeof(T) == 0, "Unsupported type mapping!");
+    }
+}
+
+int elementSize(DType type)
+{
+    switch (type)
+    {
+    case DType::FP64:
+        return sizeof(double);
+    case DType::FP32:
+        return sizeof(float);
+    case DType::FP16:
+        return 2;
+    case DType::BF16:
+        return 2;
+    case DType::FP8_e5m2:
+        return 1;
+    case DType::FP8_e4m3:
+        return 1;
+    case DType::FP4:
+        return 1; // 4 bits but 1 byte of storage
+    default:
+        return 0;
+    }
+}
 
 enum class DataLocation
 {
