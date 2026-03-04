@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace ushionn
+namespace nunet
 {
 namespace utils
 {
@@ -22,13 +22,13 @@ enum class LogLevel
 
 class Logger
 {
-   private:
+  private:
     HANDLE console_out_handle_ = nullptr;
     HANDLE console_err_handle_ = nullptr;
     HANDLE file_handle_ = nullptr;
     LogLevel min_level_;
 
-   public:
+  public:
     static Logger& getInstance();
 
     void setLogLevel(LogLevel lvl);
@@ -43,7 +43,7 @@ class Logger
     void write(LogLevel level, const char* file, int line, const char* function,
                const std::string& format, Args... args) const;
 
-   private:
+  private:
     Logger();
     ~Logger();
 
@@ -71,7 +71,8 @@ std::string Logger::formatMessage(const std::string& format, Value&& first,
 {
     auto brace_pos = format.find("{}");
 
-    if (brace_pos == std::string::npos) return format;
+    if (brace_pos == std::string::npos)
+        return format;
 
     std::string before = format.substr(0, brace_pos);
 
@@ -98,12 +99,13 @@ void Logger::write(const LogLevel level, const char* file, int line,
                    const char* function, const std::string& format,
                    Args... args) const
 {
-    if (level < min_level_) return;
+    if (level < min_level_)
+        return;
 
     std::string user_message = formatMessage(format, args...);
     std::string final_log =
         buildLogEntry(level, file, line, function, user_message);
     outputToChannels(final_log);
 }
-}  // namespace utils
-}  // namespace ushionn
+} // namespace utils
+} // namespace nunet

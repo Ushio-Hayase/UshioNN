@@ -2,7 +2,7 @@
 
 #include "core/tensor.h"
 
-namespace ushionn
+namespace nunet
 {
 
 static int gsp_variable_id = 500;
@@ -14,4 +14,4 @@ class Function
     virtual std::vector<Tensor> backward() = 0;
 };
 
-} // namespace ushionn
+} // namespace nunet

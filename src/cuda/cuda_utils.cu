@@ -1,12 +1,12 @@
 // src/cuda/cuda_utils.cu
-#include <iostream>  // 여기서 직접 std::cerr 사용 안함 (handleErrorInternal이 처리)
-#include <sstream>  // 여기서 직접 std::ostringstream 사용 안함 (handleErrorInternal이 처리)
-
-#include "cuda/cuda_utils.h"  // 선언부
-#include "utils/common.h"  // ushionn::internal::handleErrorInternal 사용 위함
+#include "cuda/cuda_utils.h" // 선언부
+#include "utils/common.h"    // ushionn::internal::handleErrorInternal 사용 위함
 #include "utils/log_macro.h"
 
-namespace ushionn
+#include <iostream> // 여기서 직접 std::cerr 사용 안함 (handleErrorInternal이 처리)
+#include <sstream> // 여기서 직접 std::ostringstream 사용 안함 (handleErrorInternal이 처리)
+
+namespace nunet
 {
 namespace cuda
 {
@@ -42,15 +42,15 @@ void printGpuMemoryUsageImpl(const std::string& tag)
 {
     size_t free_bytes, total_bytes;
     cudaError_t err =
-        cudaMemGetInfo(&free_bytes, &total_bytes);  // CUDA API 직접 호출
+        cudaMemGetInfo(&free_bytes, &total_bytes); // CUDA API 직접 호출
     if (err == cudaSuccess)
     {
         // common.h의 formatBytes 사용 (utils 네임스페이스 명시)
         LOG_INFO("[{}] - Free: {} / Total: {}: (Used:{})",
                  (tag.empty() ? "GPU Memory" : tag),
-                 ushionn::utils::formatBytes(free_bytes),
-                 ushionn::utils::formatBytes(total_bytes),
-                 ushionn::utils::formatBytes(total_bytes - free_bytes));
+                 nunet::utils::formatBytes(free_bytes),
+                 nunet::utils::formatBytes(total_bytes),
+                 nunet::utils::formatBytes(total_bytes - free_bytes));
     }
     else
     {
@@ -59,6 +59,6 @@ void printGpuMemoryUsageImpl(const std::string& tag)
     }
 }
 
-}  // namespace utils
-}  // namespace cuda
-}  // namespace ushionn
+} // namespace utils
+} // namespace cuda
+} // namespace nunet

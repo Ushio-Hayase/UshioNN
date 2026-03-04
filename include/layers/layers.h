@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-namespace ushionn
+namespace nunet
 {
 namespace nn
 {
 
 } // namespace nn
-} // namespace ushionn
+} // namespace nunet

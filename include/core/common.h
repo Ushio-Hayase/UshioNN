@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ushionn
+namespace nunet
 {
 enum class DataType
 {
@@ -10,8 +10,8 @@ enum class DataType
 
 enum class DataLocation
 {
-    NONE,    // 데이터 없음 (메모리 할당 전)
-    HOST,    // CPU 메모리에만 유효한 데이터 존재
-    DEVICE,  // GPU 메모리에만 유효한 데이터 존재
+    NONE,   // 데이터 없음 (메모리 할당 전)
+    HOST,   // CPU 메모리에만 유효한 데이터 존재
+    DEVICE, // GPU 메모리에만 유효한 데이터 존재
 };
-}  // namespace ushionn
+} // namespace nunet

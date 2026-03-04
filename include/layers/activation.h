@@ -2,10 +2,7 @@
 
 #include <memory>
 
-#include "core/variable.h"
-
-namespace ushionn
+namespace nunet
 {
-void relu(const Tensor& x, Tensor& result);
-void relu_d(const Tensor& x, Tensor& result);
-}  // namespace ushionn
+
+} // namespace nunet

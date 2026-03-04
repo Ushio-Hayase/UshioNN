@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace ushionn
+namespace nunet
 {
 
 class Context
@@ -13,4 +13,4 @@ class Context
     virtual void save() = 0;
     virtual Tensor& get() = 0;
 };
-} // namespace ushionn
+} // namespace nunet

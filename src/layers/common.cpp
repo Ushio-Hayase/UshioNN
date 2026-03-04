@@ -1,6 +1,6 @@
 #include "utils/common.h"
 
-namespace ushionn
+namespace nunet
 {
 namespace utils
 {
@@ -38,5 +38,5 @@ std::string formatBytes(size_t bytes)
     return oss.str();
 }
 
-}  // namespace utils
-}  // namespace ushionn
+} // namespace utils
+} // namespace nunet

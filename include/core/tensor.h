@@ -1,20 +1,17 @@
-// include/ushionn/core/tensor.h
+// include/nunet/core/tensor.h
 #pragma once
 
 #include "core/common.h"
-#include "cuda/cuda_utils.h" // CUDA_CHECK 등 (common.h를 통해 포함됨)
+#include "core/type.h"
 
 #include <functional>
 #include <memory> // for std::unique_ptr
 #include <vector>
 
-template <typename T>
-concept ScalarType = std::is_same_v<T, float> || std::is_same_v<T, double> ||
-                     std::is_same_v<T, int> || std::is_same_v<T, long>;
-
-namespace ushionn
+namespace nunet
 {
-static std::atomic<int64_t> tensor_uid_counter = 1000;
+
+static ::std::atomic<uint64_t> tensor_uid_counter = 1000;
 
 class Tensor
 {
@@ -22,19 +19,19 @@ class Tensor
     // --- 생성자 및 소멸자 ---
     Tensor();
 
-    Tensor(std::vector<size_t> shape, DataType type = DataType::FLOAT32);
+    Tensor(::std::vector<size_t> shape, DataType type = DataType::FLOAT32);
 
     /// @brief HOST에 데이터를 채우며 텐서를 생성합니다.
     /// @tparam T 자료형
     /// @param shape 차원
     /// @param ptr 복사할 데이터의 포인터
-    template <typename T> Tensor(std::vector<size_t> shape, const T* ptr);
+    template <ScalarType T> Tensor(::std::vector<size_t> shape, const T* ptr);
 
     /// @brief DEVICE에 데이터를 참조하며 텐서를 생성합니다.
     /// @param shape 차원
     /// @param gpu_ptr 참조할 DEVICE 포인터
     /// @param type 자료형
-    Tensor(std::vector<size_t> shape, void* gpu_ptr, DataType type);
+    Tensor(::std::vector<size_t> shape, void* gpu_ptr, DataType type);
 
     Tensor(const Tensor& other) = delete;
 
@@ -112,7 +109,6 @@ class Tensor
         {
             if (ptr)
             {
-                CUDA_CHECK(cudaFree(ptr));
             }
         }
     };
@@ -191,4 +187,4 @@ class Tensor
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
-} // namespace ushionn
+} // namespace nunet

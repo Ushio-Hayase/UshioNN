@@ -8,8 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-
-namespace ushionn
+namespace nunet
 {
 
 namespace utils
@@ -18,15 +17,15 @@ namespace utils
 // 바이트 크기를 읽기 쉬운 문자열로 변환 (구현은 common.cpp에)
 std::string formatBytes(size_t bytes);
 
-template <typename T> ushionn::DataType primitiveTypeToDataType()
+template <typename T> nunet::DataType primitiveTypeToDataType()
 {
     if constexpr (std::is_same_v<T, float>)
     {
-        return ushionn::DataType::FLOAT32;
+        return ::nunet::DataType::FLOAT32;
     }
     else if constexpr (std::is_same_v<T, double>)
     {
-        return ushionn::DataType::FLOAT64;
+        return ::nunet::DataType::FLOAT64;
     }
     else
     {
@@ -35,4 +34,4 @@ template <typename T> ushionn::DataType primitiveTypeToDataType()
 }
 
 } // namespace utils
-} // namespace ushionn
+} // namespace nunet

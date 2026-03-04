@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <format>
 
-namespace ushionn
+namespace nunet
 {
 namespace utils
 {
@@ -67,15 +67,15 @@ std::string Logger::buildLogEntry(LogLevel lvl, const char* file, int line,
     // 로그 레벨 표기
     switch (lvl)
     {
-        case LogLevel::Info:
-            ss << " [INFO] ";
-            break;
-        case LogLevel::Warning:
-            ss << " [WARN] ";
-            break;
-        case LogLevel::Error:
-            ss << " [ERROR]  ";
-            break;
+    case LogLevel::Info:
+        ss << " [INFO] ";
+        break;
+    case LogLevel::Warning:
+        ss << " [WARN] ";
+        break;
+    case LogLevel::Error:
+        ss << " [ERROR]  ";
+        break;
     }
 
     // 파일, 줄, 함수 정보 표기
@@ -94,12 +94,13 @@ void Logger::outputToChannels(const std::string& log) const
     if (file_handle_ != nullptr)
         WriteFile(file_handle_, msg.c_str(), msg.size(), nullptr, nullptr);
 
-    if (console_out_handle_ == nullptr) return;
+    if (console_out_handle_ == nullptr)
+        return;
 #if defined(DEBUG) || defined(_DEBUG)
     WriteConsole(console_out_handle_, msg.c_str(), msg.length(), nullptr,
                  nullptr);
     WriteConsole(console_out_handle_, &NEXT_LINE, 1, nullptr, nullptr);
 #endif
 }
-}  // namespace utils
-}  // namespace ushionn
+} // namespace utils
+} // namespace nunet
