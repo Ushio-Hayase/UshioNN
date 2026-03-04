@@ -34,21 +34,13 @@ class Tensor
     Tensor(::std::vector<size_t> shape, void* gpu_ptr, DataType type);
 
     Tensor(const Tensor& other) = delete;
-
+    Tensor operator=(const Tensor& other) = delete;
     Tensor(Tensor&& other);
+    Tensor operator=(Tensor&& other);
 
-    ~Tensor() = default; // 스마트 포인터가 메모리 관리
-
-    // 텐서 덧셈
-    Tensor operator+(const Tensor& other);
+    ~Tensor() = default;
 
     Tensor& operator+=(const Tensor& other);
-
-    // 원소별 텐서 간 곱셈
-    Tensor operator*(const Tensor& other);
-
-    // 스칼라 배
-    template <ScalarType T> Tensor operator*(const T& scalar);
 
     template <ScalarType T>
     friend Tensor operator*(const T& scalar, const Tensor& tensor);
@@ -56,16 +48,6 @@ class Tensor
     Tensor& operator*=(const Tensor& other);
 
     template <ScalarType T> Tensor& operator*=(const T& scalar);
-
-    Tensor operator=(const Tensor& other) = delete;
-
-    Tensor operator=(Tensor&& other);
-
-    template <typename T> void multiply(const T& b, Tensor& r);
-
-    Tensor dot(const Tensor& b);
-
-    void dot(const Tensor& b, Tensor& r) const;
 
     void allocateGpuMem(size_t total_bytes);
     void allocateCpuMem(size_t total_bytes);
@@ -89,10 +71,6 @@ class Tensor
     /// @return 전치된 새로운 텐서
     Tensor transpose() const;
 
-    /// @brief 텐서를 전치합니다 (마지막 2차원을 교환)
-    /// @param r 결과 텐서
-    void transpose(Tensor& r);
-
     /// @brief 자기 자신을 전치합니다 (in-place)
     void transpose();
 
@@ -100,7 +78,7 @@ class Tensor
     /// @param dim1 첫 번째 차원
     /// @param dim2 두 번째 차원
     /// @return 차원이 교환된 새로운 텐서
-    Tensor permute(size_t dim1, size_t dim2);
+    Tensor& permute(size_t dim1, size_t dim2);
 
   private:
     struct CudaDeleter
@@ -116,34 +94,6 @@ class Tensor
     /// @brief 메모리 해제를 위한 커스텀 Deleter,
     struct HostDeleter
     {
-        std::function<void(void*)> deleter_func;
-
-        HostDeleter() = default;
-
-        HostDeleter(DataType type)
-        {
-            switch (type)
-            {
-            case DataType::FLOAT32:
-                deleter_func = [](void* ptr) {
-                    delete[] static_cast<float*>(ptr);
-                };
-                break;
-            case DataType::FLOAT64:
-                deleter_func = [](void* ptr) {
-                    delete[] static_cast<double*>(ptr);
-                };
-                break;
-            }
-        }
-
-        void operator()(void* ptr) const
-        {
-            if (ptr && deleter_func)
-            {
-                deleter_func(ptr);
-            }
-        }
     };
 
     void calculateStrides();
@@ -186,5 +136,17 @@ class Tensor
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
+Tensor dot(const Tensor& lhs, const Tensor& rhs);
+Tensor multiply(const Tensor& lhs, const Tensor& rhs); // Product by Element
+
+/**
+ * @brief Perform a matrix product. The last dimension size of the left tensor
+ * and the last-to-second tensor dimension size of the right tensor must match.
+ *
+ * @param lhs Left tensor to perform matrix product
+ * @param rhs Right tensor to perform matrix product
+ * @return Tensor Computation Result Tensor
+ */
+Tensor matmul(const Tensor& lhs, const Tensor& rhs); // Matrix Product
 
 } // namespace nunet
