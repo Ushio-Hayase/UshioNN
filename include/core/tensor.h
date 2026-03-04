@@ -1,10 +1,9 @@
 // include/nunet/core/tensor.h
 #pragma once
 
-#include "core/common.h"
 #include "core/type.h"
 
-#include <functional>
+#include <cstdlib>
 #include <memory> // for std::unique_ptr
 #include <vector>
 
@@ -19,19 +18,20 @@ class Tensor
     // --- 생성자 및 소멸자 ---
     Tensor();
 
-    Tensor(::std::vector<size_t> shape, DataType type = DataType::FLOAT32);
+    Tensor(::std::vector<uint64_t> shape, DataType type = DataType::FP32);
 
-    /// @brief HOST에 데이터를 채우며 텐서를 생성합니다.
-    /// @tparam T 자료형
+    /// @brief HOST에 데이터를 복사하며 텐서를 생성합니다.
+    /// @tparam T 자료형(FP4, FP8_e5m2, FP8_e4m3, BF16, FP16, FP32, FP64 허용)
     /// @param shape 차원
     /// @param ptr 복사할 데이터의 포인터
-    template <ScalarType T> Tensor(::std::vector<size_t> shape, const T* ptr);
+    template <ScalarType T>
+    Tensor(const ::std::vector<uint64_t>& shape, const T* ptr);
 
     /// @brief DEVICE에 데이터를 참조하며 텐서를 생성합니다.
     /// @param shape 차원
     /// @param gpu_ptr 참조할 DEVICE 포인터
     /// @param type 자료형
-    Tensor(::std::vector<size_t> shape, void* gpu_ptr, DataType type);
+    Tensor(const ::std::vector<uint64_t>& shape, void* gpu_ptr, DataType type);
 
     Tensor(const Tensor& other) = delete;
     Tensor operator=(const Tensor& other) = delete;
@@ -94,15 +94,14 @@ class Tensor
     /// @brief 메모리 해제를 위한 커스텀 Deleter,
     struct HostDeleter
     {
+        void operator()(void* ptr) const
+        {
+            if (ptr)
+                std::free(ptr);
+        }
     };
 
-    void calculateStrides();
-
-    void addCpu(const Tensor& b, Tensor& r);
-
-    template <ScalarType T> void scalarMultiplyCpu(const T& b, Tensor& r);
-
-    void dotCpuBatched(const Tensor& b, Tensor& r) const;
+    std::vector<uint64_t> calculateStrides();
 
     void matrixMultiplyCpu(const float* a, size_t a_rows, size_t a_cols,
                            const float* b, size_t b_rows, size_t b_cols,
@@ -111,9 +110,6 @@ class Tensor
     void matrixMultiplyCpu(const double* a, size_t a_rows, size_t a_cols,
                            const double* b, size_t b_rows, size_t b_cols,
                            double* c, size_t c_rows, size_t c_cols) const;
-
-    void transposeCpu(Tensor& r) const;
-    void transposeGpu(Tensor& r) const;
 
     std::vector<size_t> calculateTransposeShape() const;
 
@@ -136,7 +132,24 @@ class Tensor
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
+
+/**
+ * @brief Take two one-dimensional tensors and perform an inner product.
+ *
+ * @param lhs The front one-dimensional tensor to perform the inner product
+ * @param rhs The backward one-dimensional tensor to perform the inner product
+ * @return Tensor Resulting tensor
+ */
 Tensor dot(const Tensor& lhs, const Tensor& rhs);
+
+/**
+ * @brief Performs elementwise multiplication. Returns an exception if the
+ * dimensions are not appropriate.
+ *
+ * @param lhs The front tensor that will perform the elementwise product
+ * @param rhs The back tensor that will perform the elementwise product
+ * @return Tensor Resulting tensor
+ */
 Tensor multiply(const Tensor& lhs, const Tensor& rhs); // Product by Element
 
 /**

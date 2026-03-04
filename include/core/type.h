@@ -113,4 +113,23 @@ template <typename T> struct IsScalarType
         std::is_same<T, fp8_e5m2_t>::value || std::is_same<T, fp4_t>::value;
 };
 #endif
+
+enum class DataType
+{
+    FP4,      // fp4_t
+    FP8_e5m2, // fp8_e5m2_t
+    FP8_e4m3, // fp8_e4m3_t
+    BF16,     // bf16_t
+    FP16,     // fp16_t
+    FP32,     // float
+    FP64,     // double
+};
+
+enum class DataLocation
+{
+    NONE,   // 데이터 없음 (메모리 할당 전)
+    HOST,   // CPU 메모리에만 유효한 데이터 존재
+    DEVICE, // GPU 메모리에만 유효한 데이터 존재
+};
+
 } // namespace nunet
