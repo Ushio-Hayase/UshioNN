@@ -4,6 +4,7 @@
 #include "utils/log_macro.h"
 
 #include <cmath>
+#include <cstdlib>
 
 namespace nunet
 {
@@ -92,7 +93,7 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
 
     strides_ = calculateStrides();
 
-    cpu_data_ptr_.reset(malloc(total_bytes_));
+    cpu_data_ptr_.reset(std::aligned_alloc(8, total_bytes_));
 
     std::copy(ptr, ptr + (total_bytes_ / sizeof(T)), (T*)cpu_data_ptr_.get());
 }
@@ -165,13 +166,6 @@ Tensor& Tensor::operator+=(const Tensor& other)
             double* other_cpu_ptr =
                 static_cast<double*>(other.cpu_data_ptr_.get());
 #if SIMD_LEVEL == 4
-            struct alignas(64) SimdData
-            {
-                union {
-                    __m512d value;
-                    double d[8];
-                };
-            };
 
             if (total_bytes_ / 8 <= 8)
             {
@@ -181,8 +175,10 @@ Tensor& Tensor::operator+=(const Tensor& other)
             }
             else
             {
-                SimdData data;
-                data.value = _mm512_load_ps(this_cpu_ptr);
+                __m512d data_origin(_mm512_load_pd(this_cpu_ptr));
+                __m512d data_other(_mm512_load_pd(other_cpu_ptr));
+                __m512d result = _mm512_add_pd(data_origin, data_other);
+                _mm512_store_pd(this_cpu_ptr, result);
             }
 
 #elif SIMD_LEVEL == 3

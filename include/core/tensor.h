@@ -3,7 +3,6 @@
 
 #include "core/type.h"
 
-#include <cstdlib>
 #include <memory> // for std::unique_ptr
 #include <vector>
 
