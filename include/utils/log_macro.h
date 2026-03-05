@@ -9,7 +9,7 @@ namespace nunet
 {
 namespace utils
 {
-#if defined(DEBUG) || defined(_DEBUG)
+#if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
 #define LOG_INFO(format, ...)                                                  \
     ::nunet::utils::Logger::getInstance().write(                               \
         ::nunet::utils::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__,      \

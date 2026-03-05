@@ -1,5 +1,6 @@
 #include "utils/common.h"
 
+#include <cstdlib>
 #include <iostream>
 
 namespace nunet
@@ -7,21 +8,18 @@ namespace nunet
 namespace utils
 {
 
-void handleErrorInternal(const char* file, int line, const char* func_name,
-                         const std::string& error_message, bool is_fatal)
+void* aligned_malloc(size_t size, size_t alignment)
 {
-    std::ostringstream oss;
-    oss << "[" << (is_fatal ? "FATAL ERROR" : "ERROR") << "] " << error_message
-        << std::endl;
-    oss << "  Location: " << file << ":" << line << " (" << func_name << ")";
-
-    std::cerr << oss.str() << std::endl;
-
-    if (is_fatal)
-    {
-        throw std::runtime_error(oss.str());
-        // 또는 std::abort();
-    }
+#if defined(_MSC_VER)
+    return _aligned_malloc(size, alignment);
+#elif defined(__APPLE__) || defined(__linux__)
+    void* ptr = nullptr;
+    if (posix_memalign(&ptr, alignment, size) != 0)
+        return nullptr;
+    return ptr;
+#else
+    return aligned_malloc(alignment, size);
+#endif
 }
 
 std::string formatBytes(size_t bytes)

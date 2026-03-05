@@ -3,8 +3,10 @@
 
 #include "core/type.h"
 
+#include <atomic>
 #include <memory> // for std::unique_ptr
 #include <vector>
+
 
 namespace nunet
 {

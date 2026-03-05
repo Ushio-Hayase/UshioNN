@@ -1,10 +1,10 @@
 #include "core/tensor.h"
 
 #include "core/simd.h"
+#include "utils/common.h"
 #include "utils/log_macro.h"
 
 #include <cmath>
-#include <cstdlib>
 
 namespace nunet
 {
@@ -43,7 +43,8 @@ Tensor::Tensor(::std::vector<uint64_t> shape, DType type)
     }
     shape_size_ = shape_.size();
 
-    cpu_data_ptr_.reset(std::malloc(total_bytes_));
+    cpu_data_ptr_.reset(
+        utils::aligned_malloc(total_bytes_, elementSize(type_)));
 
     strides_ = calculateStrides();
 }
@@ -93,7 +94,7 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
 
     strides_ = calculateStrides();
 
-    cpu_data_ptr_.reset(std::aligned_alloc(8, total_bytes_));
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, sizeof(T)));
 
     std::copy(ptr, ptr + (total_bytes_ / sizeof(T)), (T*)cpu_data_ptr_.get());
 }
@@ -165,20 +166,21 @@ Tensor& Tensor::operator+=(const Tensor& other)
             double* this_cpu_ptr = static_cast<double*>(cpu_data_ptr_.get());
             double* other_cpu_ptr =
                 static_cast<double*>(other.cpu_data_ptr_.get());
+            size_t total_elements = total_bytes_ / 8;
 #if SIMD_LEVEL == 4
 
-            if (total_bytes_ / 8 <= 8)
+            size_t limit = total_elements - (total_elements % 8);
+            for (size_t i = 0; i < limit; i += 8)
             {
-
-                for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
-                    *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+                __m512d data_origin(_mm512_load_pd(this_cpu_ptr + i));
+                __m512d data_other(_mm512_load_pd(other_cpu_ptr + i));
+                _mm512_store_pd(this_cpu_ptr + i,
+                                _mm512_add_pd(data_origin, data_other));
             }
-            else
+
+            for (size_t i = limit; i < total_elements; ++i)
             {
-                __m512d data_origin(_mm512_load_pd(this_cpu_ptr));
-                __m512d data_other(_mm512_load_pd(other_cpu_ptr));
-                __m512d result = _mm512_add_pd(data_origin, data_other);
-                _mm512_store_pd(this_cpu_ptr, result);
+                this_cpu_ptr[i] += other_cpu_ptr[i];
             }
 
 #elif SIMD_LEVEL == 3
