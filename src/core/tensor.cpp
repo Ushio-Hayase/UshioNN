@@ -1,5 +1,6 @@
 #include "core/tensor.h"
 
+#include "core/simd.h"
 #include "utils/log_macro.h"
 
 #include <cmath>
@@ -160,17 +161,36 @@ Tensor& Tensor::operator+=(const Tensor& other)
         switch (type_)
         {
         case DType::FP64: {
-#if defined(USE_AVX) || defined(__AVX__)
-            struct AvxContainer
-            {
-
-            }
-#endif
             double* this_cpu_ptr = static_cast<double*>(cpu_data_ptr_.get());
             double* other_cpu_ptr =
                 static_cast<double*>(other.cpu_data_ptr_.get());
-            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
-                *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+#if SIMD_LEVEL == 4
+            struct alignas(64) SimdData
+            {
+                union {
+                    __m512d value;
+                    double d[8];
+                };
+            };
+
+            if (total_bytes_ / 8 <= 8)
+            {
+
+                for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+                    *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+            }
+            else
+            {
+                SimdData data;
+                data.value = _mm512_load_ps(this_cpu_ptr);
+            }
+
+#elif SIMD_LEVEL == 3
+#elif SIMD_LEVEL == 2
+#elif SIMD_LEVEL == 1
+#elif SIMD_LEVEL == 0
+#endif
+
             break;
         }
         case DType::FP32: {

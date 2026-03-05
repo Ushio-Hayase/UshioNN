@@ -4,15 +4,14 @@ project(nunet LANGUAGES CXX)
 set(NUNET_BUILD_TESTING OFF)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(USE_ROCM "Build for AMD ROCm using HIP" OFF)
 option(USE_CUDA "Build for NVIDIA CUDA" OFF)
 option(USE_CPU "Build for CPU" ON)
 
-option(USE_AVX ON)
-option(USE_AVX2 ON)
-option(USE_AVX512 ON)
+option(USE_AVX "Build with AVX" ON)
+option(USE_AVX2 "Build with AVX2" ON)
+option(USE_AVX512 "Bulid with AVX512" ON)
 
 if(USE_AVX512)
     if(MSVC)
