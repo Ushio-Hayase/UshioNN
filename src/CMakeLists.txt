@@ -41,26 +41,27 @@ if(USE_ROCM)
     endforeach()
 
     # 변환된 HIP 소스로 실행 파일 생성
-    add_library(ushionn_lib STATIC ${HIP_SOURCES})
+    add_library(nunet_lib STATIC ${HIP_SOURCES})
 
     if(MSVC)
-        target_compile_options(ushoinn_lib PRIVATE /EHsc)
+        target_compile_options(nunet_lib PRIVATE /EHsc)
     endif()
 
-else()
+elseif(USE_CUDA)
     enable_language(CXX CUDA)
-    add_library(ushionn_lib STATIC ${SOURCE_FILES})
+    add_library(nunet_lib STATIC ${SOURCE_FILES})
+else()
+    add_library(nunet_lib STATIC ${SOURCE_FILES})
 endif()
 
 
+add_library(nunet::lib ALIAS nunet_lib)
 
-add_library(ushionn::lib ALIAS ushionn_lib)
-
-target_include_directories(ushionn_lib PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+target_include_directories(nunet_lib PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     ${CUDA_INCLUDE_DIRS})
 
 
-target_link_libraries(ushionn_lib
+target_link_libraries(nunet_lib
     PUBLIC
     ${CUDA_LIBRARIES}
 )
