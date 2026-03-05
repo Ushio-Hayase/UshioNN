@@ -1,5 +1,7 @@
 #include "utils/common.h"
 
+#include <iostream>
+
 namespace nunet
 {
 namespace utils

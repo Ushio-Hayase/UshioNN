@@ -81,6 +81,8 @@ class Tensor
     /// @return 차원이 교환된 새로운 텐서
     Tensor& permute(size_t dim1, size_t dim2);
 
+    uint64_t elementSize(DType type);
+
   private:
     struct CudaDeleter
     {

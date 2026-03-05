@@ -155,29 +155,6 @@ template <ScalarType T> constexpr DType getDtype()
     }
 }
 
-int elementSize(DType type)
-{
-    switch (type)
-    {
-    case DType::FP64:
-        return sizeof(double);
-    case DType::FP32:
-        return sizeof(float);
-    case DType::FP16:
-        return 2;
-    case DType::BF16:
-        return 2;
-    case DType::FP8_e5m2:
-        return 1;
-    case DType::FP8_e4m3:
-        return 1;
-    case DType::FP4:
-        return 1; // 4 bits but 1 byte of storage
-    default:
-        return 0;
-    }
-}
-
 enum class DataLocation
 {
     NONE,   // 데이터 없음 (메모리 할당 전)

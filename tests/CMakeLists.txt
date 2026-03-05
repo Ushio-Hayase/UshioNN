@@ -1,6 +1,8 @@
-find_package(GTest CONFIG REQUIRED)
+
 # --- 유닛 테스트 빌드 ---
-if(USHIONN_BUILD_TESTING)
+if(NUNET_BUILD_TESTING)
+    find_package(GTest CONFIG REQUIRED)
+
     enable_testing() # CTest 사용 활성화
 
     # 테스트 실행 파일 이름
