@@ -18,7 +18,7 @@ void* aligned_malloc(size_t size, size_t alignment)
         return nullptr;
     return ptr;
 #else
-    return aligned_malloc(alignment, size);
+    return std::aligned_malloc(alignment, size);
 #endif
 }
 

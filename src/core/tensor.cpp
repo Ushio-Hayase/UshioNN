@@ -43,8 +43,15 @@ Tensor::Tensor(::std::vector<uint64_t> shape, DType type)
     }
     shape_size_ = shape_.size();
 
-    cpu_data_ptr_.reset(
-        utils::aligned_malloc(total_bytes_, elementSize(type_)));
+#if SIMD_LEVEL == 4
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 8));
+#elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 4));
+#elif SIMD_LEVEL == 1
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 2));
+#elif SIMD_LEVEL == 0
+    cpu_data_ptr_.reset(std::malloc(total_bytes_));
+#endif
 
     strides_ = calculateStrides();
 }
@@ -94,7 +101,15 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
 
     strides_ = calculateStrides();
 
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, sizeof(T)));
+#if SIMD_LEVEL == 4
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 8));
+#elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 4));
+#elif SIMD_LEVEL == 1
+    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 2));
+#elif SIMD_LEVEL == 0
+    cpu_data_ptr_.reset(std::malloc(total_bytes_));
+#endif
 
     std::copy(ptr, ptr + (total_bytes_ / sizeof(T)), (T*)cpu_data_ptr_.get());
 }
@@ -183,9 +198,34 @@ Tensor& Tensor::operator+=(const Tensor& other)
                 this_cpu_ptr[i] += other_cpu_ptr[i];
             }
 
-#elif SIMD_LEVEL == 3
-#elif SIMD_LEVEL == 2
+#elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
+
+            size_t limit = total_elements - (total_elements % 4);
+            for (size_t i = 0; i < limit; i += 4)
+            {
+                __m256d data_origin(_mm256_load_pd(this_cpu_ptr + i));
+                __m256d data_other(_mm256_load_pd(this_cpu_ptr + i));
+                _mm256_store_pd(this_cpu_ptr + i,
+                                _mm256_add_pd(data_origin, data_other));
+            }
+
+            for (size_t i = limit; i < total_elements; ++i)
+                this_cpu_ptr[i] += other_cpu_ptr[i];
+
 #elif SIMD_LEVEL == 1
+
+            size_t limit = total_elements - (total_elements % 2);
+            for (size_t i = 0; i < limit; i += 3)
+            {
+                __m128d data_origin(_mm_load_pd(this_cpu_ptr + i));
+                __m128d data_other(_mm_load_pd(this_cpu_ptr + i));
+                _mm_store_pd(this_cpu_ptr + i,
+                             _mm_add_pd(data_origin, data_other));
+            }
+
+            for (size_t i = limit; i < total_elements; ++i)
+                this_cpu_ptr[i] += other_cpu_ptr[i];
+
 #elif SIMD_LEVEL == 0
 #endif
 

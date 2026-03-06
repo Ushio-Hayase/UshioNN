@@ -9,9 +9,10 @@ option(USE_ROCM "Build for AMD ROCm using HIP" OFF)
 option(USE_CUDA "Build for NVIDIA CUDA" OFF)
 option(USE_CPU "Build for CPU" ON)
 
+option(USE_SIMD "Use SIMD" ON)
 option(USE_AVX "Build with AVX" ON)
-option(USE_AVX2 "Build with AVX2" ON)
-option(USE_AVX512 "Bulid with AVX512" ON)
+option(USE_AVX2 "Build with AVX2" OFF)
+option(USE_AVX512 "Bulid with AVX512" OFF)
 
 
 if(USE_AVX512)
@@ -45,6 +46,10 @@ elseif(USE_CPU)
     target_compile_definitions(nunet_lib PRIVATE USE_CPU)
 else()
     message(FATAL_ERROR "You haven't selected a device to use")
+endif()
+
+if(USE_SIMD)
+    target_compile_definitions(nunet_lib PRIVATE USE_SIMD)
 endif()
 
 if(USE_AVX512)
