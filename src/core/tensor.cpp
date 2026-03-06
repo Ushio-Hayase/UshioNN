@@ -2,9 +2,11 @@
 
 #include "core/simd.h"
 #include "utils/common.h"
+#include "utils/constant.h"
 #include "utils/log_macro.h"
 
 #include <cmath>
+#include <thread>
 
 namespace nunet
 {
@@ -44,11 +46,11 @@ Tensor::Tensor(::std::vector<uint64_t> shape, DType type)
     shape_size_ = shape_.size();
 
 #if SIMD_LEVEL == 4
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 8));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 8));
 #elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 4));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 4));
 #elif SIMD_LEVEL == 1
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 2));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 2));
 #elif SIMD_LEVEL == 0
     cpu_data_ptr_.reset(std::malloc(total_bytes_));
 #endif
@@ -102,11 +104,11 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr)
     strides_ = calculateStrides();
 
 #if SIMD_LEVEL == 4
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 8));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 8));
 #elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 4));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 4));
 #elif SIMD_LEVEL == 1
-    cpu_data_ptr_.reset(utils::aligned_malloc(total_bytes_, 2));
+    cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, 2));
 #elif SIMD_LEVEL == 0
     cpu_data_ptr_.reset(std::malloc(total_bytes_));
 #endif
@@ -174,6 +176,10 @@ Tensor& Tensor::operator+=(const Tensor& other)
 
     if (this->location_ == DataLocation::HOST)
     {
+        uint32_t number_of_thread = std::thread::hardware_concurrency();
+
+        if (number_of_thread == 0)
+            number_of_thread = 1;
 
         switch (type_)
         {
@@ -182,52 +188,100 @@ Tensor& Tensor::operator+=(const Tensor& other)
             double* other_cpu_ptr =
                 static_cast<double*>(other.cpu_data_ptr_.get());
             size_t total_elements = total_bytes_ / 8;
+
+            size_t align_step = 1;
 #if SIMD_LEVEL == 4
+            align_step = 8;
+#elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
+            align_step = 4;
+#elif SIMD_LEVEL == 1
+            align_step = 2;
+#endif
 
-            size_t limit = total_elements - (total_elements % 8);
-            for (size_t i = 0; i < limit; i += 8)
-            {
-                __m512d data_origin(_mm512_load_pd(this_cpu_ptr + i));
-                __m512d data_other(_mm512_load_pd(other_cpu_ptr + i));
-                _mm512_store_pd(this_cpu_ptr + i,
-                                _mm512_add_pd(data_origin, data_other));
-            }
+            if (total_elements < MULTI_THREAD_BASELINE)
+                number_of_thread = 1;
 
-            for (size_t i = limit; i < total_elements; ++i)
-            {
-                this_cpu_ptr[i] += other_cpu_ptr[i];
-            }
+            size_t chunk_size = total_elements / number_of_thread;
+            chunk_size &= ~(align_step - 1);
+
+            auto worker = [](double* src, double* tgt, size_t start,
+                             size_t end) {
+#if SIMD_LEVEL == 4
+                size_t i = start;
+                size_t limit = end - ((end - start) & ~7ULL);
+                for (; i < limit; i += 8)
+                {
+                    __m512d data_origin(_mm512_load_pd(src + i));
+                    __m512d data_other(_mm512_load_pd(tgt + i));
+                    _mm512_store_pd(src + i,
+                                    _mm512_add_pd(data_origin, data_other));
+                }
+
+                for (; i < end; ++i)
+                {
+                    src[i] += tgt[i];
+                }
 
 #elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
+                size_t i = start;
+                size_t limit = end - ((end - start) & ~3ULL);
+                for (; i < limit; i += 4)
+                {
+                    __m256d data_origin(_mm256_load_pd(src + i));
+                    __m256d data_other(_mm256_load_pd(tgt + i));
+                    _mm256_store_pd(src + i,
+                                    _mm256_add_pd(data_origin, data_other));
+                }
 
-            size_t limit = total_elements - (total_elements % 4);
-            for (size_t i = 0; i < limit; i += 4)
-            {
-                __m256d data_origin(_mm256_load_pd(this_cpu_ptr + i));
-                __m256d data_other(_mm256_load_pd(this_cpu_ptr + i));
-                _mm256_store_pd(this_cpu_ptr + i,
-                                _mm256_add_pd(data_origin, data_other));
-            }
-
-            for (size_t i = limit; i < total_elements; ++i)
-                this_cpu_ptr[i] += other_cpu_ptr[i];
+                for (; i < end; ++i)
+                {
+                    src[i] += tgt[i];
+                }
 
 #elif SIMD_LEVEL == 1
+                size_t i = start;
+                size_t limit = end - ((end - start) & ~1ULL);
+                for (; i < limit; i += 2)
+                {
+                    __m128d data_origin(_mm_load_pd(src + i));
+                    __m128d data_other(_mm_load_pd(tgt + i));
+                    _mm_store_pd(src + i, _mm_add_pd(data_origin, data_other));
+                }
 
-            size_t limit = total_elements - (total_elements % 2);
-            for (size_t i = 0; i < limit; i += 3)
-            {
-                __m128d data_origin(_mm_load_pd(this_cpu_ptr + i));
-                __m128d data_other(_mm_load_pd(this_cpu_ptr + i));
-                _mm_store_pd(this_cpu_ptr + i,
-                             _mm_add_pd(data_origin, data_other));
-            }
-
-            for (size_t i = limit; i < total_elements; ++i)
-                this_cpu_ptr[i] += other_cpu_ptr[i];
+                for (; i < end; ++i)
+                {
+                    src[i] += tgt[i];
+                }
 
 #elif SIMD_LEVEL == 0
+                for (size_t i = start; i < end; ++i)
+                    src[i] += tgt[i];
 #endif
+            };
+
+            std::vector<std::thread> threads;
+            if (number_of_thread <= 1)
+            {
+                worker(this_cpu_ptr, other_cpu_ptr, 0, total_elements);
+                break;
+            }
+            threads.reserve(number_of_thread);
+            size_t current_start = 0;
+
+            for (size_t i = 0; i < number_of_thread - 1; ++i)
+            {
+                size_t current_end = current_start + chunk_size;
+                if (current_end > total_elements)
+                    current_end = total_elements;
+                threads.emplace_back(worker, this_cpu_ptr, other_cpu_ptr,
+                                     current_start, current_end);
+                current_start = current_end;
+            }
+
+            threads.emplace_back(worker, this_cpu_ptr, other_cpu_ptr,
+                                 current_start, total_elements);
+            for (auto& t : threads)
+                t.join();
 
             break;
         }
@@ -235,8 +289,7 @@ Tensor& Tensor::operator+=(const Tensor& other)
             float* this_cpu_ptr = static_cast<float*>(cpu_data_ptr_.get());
             float* other_cpu_ptr =
                 static_cast<float*>(other.cpu_data_ptr_.get());
-            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
-                *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
+            size_t total_elements = total_bytes_ / 4;
             break;
         }
         case DType::FP16: {
@@ -252,6 +305,15 @@ Tensor& Tensor::operator+=(const Tensor& other)
             bf16_t* other_cpu_ptr =
                 static_cast<bf16_t*>(other.cpu_data_ptr_.get());
 
+            break;
+        }
+        case DType::FP8_e5m2: {
+            break;
+        }
+        case DType::FP8_e4m3: {
+            break;
+        }
+        case DType::FP4: {
             break;
         }
         }
@@ -272,9 +334,9 @@ uint64_t Tensor::elementSize(DType type)
         return 2;
     case DType::BF16:
         return 2;
-    case DType::FP8_e5m2:
-        return 1;
     case DType::FP8_e4m3:
+        return 1;
+    case DType::FP8_e5m2:
         return 1;
     case DType::FP4:
         return 1; // 4 bits but 1 byte of storage

@@ -11,8 +11,8 @@ option(USE_CPU "Build for CPU" ON)
 
 option(USE_SIMD "Use SIMD" ON)
 option(USE_AVX "Build with AVX" ON)
-option(USE_AVX2 "Build with AVX2" OFF)
-option(USE_AVX512 "Bulid with AVX512" OFF)
+option(USE_AVX2 "Build with AVX2" ON)
+option(USE_AVX512 "Bulid with AVX512" ON)
 
 
 if(USE_AVX512)
