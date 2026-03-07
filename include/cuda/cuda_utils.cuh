@@ -3,12 +3,7 @@
 #include "core/error_codes.h" // cudaError_t, cudnnStatus_t 타입 정의
 
 #if defined(USE_CUDA)
-
 #include <string> // for std::string
-
-// 이 헤더는 CUDA API 함수를 직접 호출하지 않으므로,
-// 일반 C++ 컴파일러도 처리 가능 (선언만 있기 때문)
-
 namespace nunet
 {
 namespace cuda
@@ -58,6 +53,16 @@ inline void printGpuMemoryUsage(const std::string& tag = "")
 #else
     (void)tag; // unused parameter 경고 방지
 #endif
+}
+
+__device__ inline unsigned int getGlobalIdx()
+{
+    return ((blockIdx.x * (blockDim.x * blockDim.y * blockDim.z)) +
+            (blockIdx.y * (gridDim.x * blockDim.x * blockDim.y * blockDim.z)) +
+            (blockIdx.z *
+             (gridDim.y * gridDim.x * blockDim.x * blockDim.y * blockDim.z)) +
+            (threadIdx.x) + (threadIdx.y * blockDim.x) +
+            (threadIdx.z * (blockDim.x * blockDim.y)));
 }
 
 } // namespace utils

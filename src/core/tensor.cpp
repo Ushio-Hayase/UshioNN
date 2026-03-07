@@ -318,6 +318,10 @@ Tensor& Tensor::operator+=(const Tensor& other)
         }
         }
     }
+    else if (location_ == DataLocation::DEVICE)
+    {
+        addToThisGpu(other, type_);
+    }
 
     return *this;
 }

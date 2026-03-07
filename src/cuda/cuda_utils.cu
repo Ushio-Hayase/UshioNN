@@ -1,16 +1,15 @@
 // src/cuda/cuda_utils.cu
-#include "cuda/cuda_utils.h" // 선언부
-#include "utils/common.h"    // ushionn::internal::handleErrorInternal 사용 위함
+#include "utils/common.h"
 #include "utils/log_macro.h"
 
-#include <iostream> // 여기서 직접 std::cerr 사용 안함 (handleErrorInternal이 처리)
-#include <sstream> // 여기서 직접 std::ostringstream 사용 안함 (handleErrorInternal이 처리)
+#include <iostream>
+#include <sstream>
 
-namespace nunet
-{
-namespace cuda
-{
-namespace utils
+#include "cuda/cuda_utils.cuh"
+
+
+
+namespace nunet::cuda::utils
 {
 
 void handleCudaError(cudaError_t err_code, const char* file, int line,
@@ -59,6 +58,5 @@ void printGpuMemoryUsageImpl(const std::string& tag)
     }
 }
 
-} // namespace utils
-} // namespace cuda
-} // namespace nunet
+} // namespace nunet::cuda::utils
+

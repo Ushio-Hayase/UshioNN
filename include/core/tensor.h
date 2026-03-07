@@ -7,7 +7,6 @@
 #include <memory> // for std::unique_ptr
 #include <vector>
 
-
 namespace nunet
 {
 
@@ -106,6 +105,8 @@ class Tensor
     };
 
     std::vector<uint64_t> calculateStrides();
+
+    void addToThisGpu(const Tensor& other, DType type);
 
     void matrixMultiplyCpu(const float* a, size_t a_rows, size_t a_cols,
                            const float* b, size_t b_rows, size_t b_cols,

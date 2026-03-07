@@ -7,10 +7,10 @@
 
 #if defined(USE_CUDA)
 #include <cuda_fp16.h>
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
+#if defined(TARGET_CUDA_ARCH) && TARGET_CUDA_ARCH >= 80
 #include <cuda_bf16.h>
 #endif
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(TARGET_CUDA_ARCH) && TARGET_CUDA_ARCH >= 89
 #include <cuda_fp8.h>
 #endif
 
@@ -44,19 +44,20 @@ struct FallbackFp8E5m2
 
 #if defined(USE_CUDA)
 using fp16_t = __half;
+// TODO: half2로 변경하여 GPU SIMD 가능, 하지만 4바이트 메모리 정렬 필요
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
+#if defined(TARGET_CUDA_ARCH) && TARGET_CUDA_ARCH >= 80
 using bf16_t = __nv_bfloat16;
 #else
-using bf16_t = fallback_bf16;
+using bf16_t = FallbackBf16;
 #endif
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 890
+#if defined(TARGET_CUDA_ARCH) && TARGET_CUDA_ARCH >= 89
 using fp8_e4m3_t = __nv_fp8_e4m3;
 using fp8_e5m2_t = __nv_fp8_e5m2;
 #else
-using fp8_e4m3_t = fallback_fp8_e4m3;
-using fp8_e5m2_t = fallback_fp8_e5m2;
+using fp8_e4m3_t = FallbackFp8E4m3;
+using fp8_e5m2_t = FallbackFp8E5m2;
 #endif
 
 using fp4_t = uint8_t; // packs two 4-bit values into one byte (uint8_t) with a
@@ -71,8 +72,8 @@ using bf16_t = hip_bfloat16;
 using bf16_t = fallback_bf16;
 #endif
 
-using fp8_e4m3_t = fallback_fp8_e4m3;
-using fp8_e5m2_t = fallback_fp8_e5m2;
+using fp8_e4m3_t = Fallback_fp8_e4m3;
+using fp8_e5m2_t = Fallback_fp8_e5m2;
 
 using fp4_t = uint8_t; // packs two 4-bit values into one byte (uint8_t) with a
                        // bit operation packed into a byte (int8_t)

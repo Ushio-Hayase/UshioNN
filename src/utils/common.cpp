@@ -8,7 +8,7 @@ namespace nunet
 namespace utils
 {
 
-void* aligned_malloc(size_t size, size_t alignment)
+void* alignedMalloc(size_t size, size_t alignment)
 {
 #if defined(_MSC_VER)
     return _aligned_malloc(size, alignment);
