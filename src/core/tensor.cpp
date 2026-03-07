@@ -499,7 +499,7 @@ Tensor& Tensor::operator*=(const float scalar)
 
 #elif SIMD_LEVEL == 1
                 size_t i = start;
-                size_t limit = end - ((end - start) & ~2ULL);
+                size_t limit = end - ((end - start) & ~3ULL);
                 for (; i < limit; i += 4)
                 {
                     const __m128 data_other(_mm_set_ps(scalar));
@@ -566,7 +566,7 @@ Tensor& Tensor::operator*=(const float scalar)
                          size_t end) {
 #if SIMD_LEVEL == 4
             size_t i = start;
-            size_t limit = end - ((end - start) & ~16ULL);
+            size_t limit = end - ((end - start) & ~31ULL);
             for (; i < limit; i += 32)
             {
                 const __m512h data_origin(_mm512_load_ph(src + i));
@@ -596,8 +596,8 @@ Tensor& Tensor::operator*=(const float scalar)
 
 #elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
                 size_t i = start;
-                size_t limit = end - ((end - start) & ~7ULL);
-                for (; i < limit; i += 8)
+                size_t limit = end - ((end - start) & ~15ULL);
+                for (; i < limit; i += 16)
                 {
                     const __m256 data_origin(_mm256_load_ps(src + i));
                     const __m256 data_other(_mm256_set_ps(scalar));
@@ -612,8 +612,8 @@ Tensor& Tensor::operator*=(const float scalar)
 
 #elif SIMD_LEVEL == 1
                 size_t i = start;
-                size_t limit = end - ((end - start) & ~2ULL);
-                for (; i < limit; i += 4)
+                size_t limit = end - ((end - start) & ~7ULL);
+                for (; i < limit; i += 8)
                 {
                     const __m128 data_other(_mm_set_ps(scalar));
                     const __m128 data_origin(_mm_load_ps(src + i));
