@@ -387,7 +387,7 @@ Tensor& Tensor::operator*=(const float scalar)
                 for (; i < limit; i += 4)
                 {
                     const __m256d data_origin(_mm256_load_pd(src + i));
-                    const __m256d data_other(_mm256_set_pd(scalar));
+                    const __m256d data_other(_mm256_set1_pd(scalar));
                     _mm256_store_pd(src + i,
                                     _mm256_mul_pd(data_origin, data_other));
                 }
@@ -403,7 +403,7 @@ Tensor& Tensor::operator*=(const float scalar)
                 for (; i < limit; i += 2)
                 {
                     const __m128d data_origin(_mm_load_pd(src + i));
-                    const __m128d data_other(_mm_set_pd(scalar));
+                    const __m128d data_other(_mm_set1_pd(scalar));
                     _mm_store_pd(src + i, _mm_mul_pd(data_origin, data_other));
                 }
 
@@ -487,7 +487,7 @@ Tensor& Tensor::operator*=(const float scalar)
                 for (; i < limit; i += 8)
                 {
                     const __m256 data_origin(_mm256_load_ps(src + i));
-                    const __m256 data_other(_mm256_set_ps(scalar));
+                    const __m256 data_other(_mm256_set1_ps(scalar));
                     _mm256_store_ps(src + i,
                                     _mm256_mul_ps(data_origin, data_other));
                 }
@@ -502,7 +502,7 @@ Tensor& Tensor::operator*=(const float scalar)
                 size_t limit = end - ((end - start) & ~3ULL);
                 for (; i < limit; i += 4)
                 {
-                    const __m128 data_other(_mm_set_ps(scalar));
+                    const __m128 data_other(_mm_set1_ps(scalar));
                     const __m128 data_origin(_mm_load_ps(src + i));
                     _mm_store_ps(src + i, _mm_mul_ps(data_origin, data_other));
                 }
@@ -583,7 +583,7 @@ Tensor& Tensor::operator*=(const float scalar)
                                 _mm512_mul_ph(data_origin, data_other));
 #else
                     const _Float16 scalar_copy = static_cast<_Float16>(scalar);
-                    const __m512h data_other(_mm512_set1_ph(scalar));
+                    const __m512h data_other(_mm512_set1_ph(scalar_copy));
                     _mm512_store_ph(src,
                                     _mm512_mul_ph(data_origin, data_other));
                 }
@@ -599,10 +599,11 @@ Tensor& Tensor::operator*=(const float scalar)
                 size_t limit = end - ((end - start) & ~15ULL);
                 for (; i < limit; i += 16)
                 {
-                    const __m256 data_origin(_mm256_load_ps(src + i));
-                    const __m256 data_other(_mm256_set_ps(scalar));
-                    _mm256_store_pd(src + i,
-                                    _mm256_mul_ps(data_origin, data_other));
+                    const _Float16 scalar_copy = static_cast<_Float16>(scalar);
+                    const __m256 data_origin(_mm256_load_ph(src + i));
+                    const __m256 data_other(_mm256_set1_ph(scalar_copy));
+                    _mm256_store_ph(src + i,
+                                    _mm256_mul_ph(data_origin, data_other));
                 }
 
                 for (; i < end; ++i)
@@ -615,9 +616,10 @@ Tensor& Tensor::operator*=(const float scalar)
                 size_t limit = end - ((end - start) & ~7ULL);
                 for (; i < limit; i += 8)
                 {
-                    const __m128 data_other(_mm_set_ps(scalar));
+                    const _Float16 scalar_copy = static_cast<_Float16>(scalar);
+                    const __m128 data_other(_mm_set1_ph(scalar_copy));
                     const __m128 data_origin(_mm_load_ps(src + i));
-                    _mm_store_ps(src + i, _mm_mul_ps(data_origin, data_other));
+                    _mm_store_ph(src + i, _mm_mul_ph(data_origin, data_other));
                 }
 
                 for (; i < end; ++i)
@@ -657,16 +659,19 @@ Tensor& Tensor::operator*=(const float scalar)
             break;
         } case DType::BF16: {
             bf16_t* this_cpu_ptr = static_cast<bf16_t*>(cpu_data_ptr_.get());
-
+            // TODO: BF16형 텐서 *= 연산자 구현 필요
             break;
         }
         case DType::FP8_e5m2: {
+            // TODO: FP8_e5m2형 텐서 *= 연산자 구현 필요
             break;
         }
         case DType::FP8_e4m3: {
+            // TODO: FP8_e4m3형 텐서 *= 연산자 구현 필요
             break;
         }
         case DType::FP4: {
+            // TODO: FP4형 텐서 *= 연산자 구현 필요
             break;
         }
         }
@@ -678,6 +683,17 @@ Tensor& Tensor::operator*=(const float scalar)
 
         return *this;
     }
+
+    std::vector<size_t> Tensor::getShape() const { return shape_; }
+    DataLocation Tensor::getDevice() const { return location_; }
+    DType Tensor::getType() const { return type_; }
+    size_t Tensor::getTotalBytes() const { return total_bytes_; }
+    size_t Tensor::getShapeSize() const { return shape_size_; }
+
+    const void* Tensor::getCpuPtr() const { return cpu_data_ptr_.get(); }
+    const void* Tensor::getGpuPtr() const { return gpu_data_ptr_.get(); }
+    void* Tensor::getCpuPtrMutable() { return cpu_data_ptr_.get(); }
+    void* Tensor::getGpuPtrMutable() { return gpu_data_ptr_.get(); }
 
     uint64_t Tensor::elementSize(DType type)
     {
