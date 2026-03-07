@@ -9,6 +9,11 @@
 #include <filesystem>
 #include <format>
 
+#if !defined(_WIN32)
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
+
 namespace nunet
 {
 namespace utils
@@ -21,21 +26,35 @@ Logger::Logger() : min_level_(LogLevel::Info)
         std::chrono::zoned_time{std::chrono::current_zone(), t};
 
     if (!std::filesystem::exists("./logs"))
+    {
+#if defined(_WIN32)
         CreateDirectoryW(L"./logs", nullptr);
+#else
+        mkdir("logs", 0777);
+#endif
+    }
 
     const std::wstring file_name =
         std::format(L"./logs/Log_{:%Y-%m-%d_%H-%M-%S}.log", local_time);
+
+#if defined(_WIN32)
     file_handle_ = CreateFileW(file_name.c_str(), GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                                CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-#if defined(DEBUG) || defined(_DEBUG)
-    console_out_handle_ = GetStdHandle(STD_OUTPUT_HANDLE);
-    console_err_handle_ = GetStdHandle(STD_ERROR_HANDLE);
+#else
+    open(reinterpret_cast<const char*>(file_name.c_str()), O_CREAT | O_TRUNC,
+         0644);
 #endif
 }
 
-Logger::~Logger() { CloseHandle(file_handle_); }
+Logger::~Logger()
+{
+#if defined(_WIN32)
+    CloseHandle(file_handle_);
+#else
+    close(file_handle_);
+#endif
+}
 
 Logger& Logger::getInstance()
 {
@@ -59,7 +78,11 @@ std::string Logger::buildLogEntry(LogLevel lvl, const char* file, int line,
     const auto time_t = std::chrono::system_clock::to_time_t(now);
 
     tm local_time;
+#if defined(_WIN32)
     localtime_s(&local_time, &time_t);
+#else
+    localtime_r(&time_t, &local_time);
+#endif
 
     // 시간 포맷팅: [YYYY-MM-DD HH:MM:SS]
     ss << "[" << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S") << "]";
@@ -91,16 +114,14 @@ void Logger::outputToChannels(const std::string& log) const
     constexpr char NEXT_LINE = '\n';
     const std::string msg = log + NEXT_LINE;
 
-    if (file_handle_ != nullptr)
+    if (file_handle_)
+    {
+#if defined(_WIN32)
         WriteFile(file_handle_, msg.c_str(), msg.size(), nullptr, nullptr);
-
-    if (console_out_handle_ == nullptr)
-        return;
-#if defined(DEBUG) || defined(_DEBUG)
-    WriteConsole(console_out_handle_, msg.c_str(), msg.length(), nullptr,
-                 nullptr);
-    WriteConsole(console_out_handle_, &NEXT_LINE, 1, nullptr, nullptr);
+#else
+        ::write(file_handle_, msg.c_str(), msg.size());
 #endif
+    }
 }
 } // namespace utils
 } // namespace nunet

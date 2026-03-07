@@ -2,8 +2,13 @@
 // Created by UshioHayase on 2025-11-11.
 //
 #pragma once
+#include <cstdint>
 
+#if defined(_WIN_32)
 #include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <ios>
 #include <sstream>
@@ -23,9 +28,11 @@ enum class LogLevel
 class Logger
 {
   private:
-    HANDLE console_out_handle_ = nullptr;
-    HANDLE console_err_handle_ = nullptr;
+#if defined(_WIN32)
     HANDLE file_handle_ = nullptr;
+#else
+    int file_handle_ = 0;
+#endif
     LogLevel min_level_;
 
   public:

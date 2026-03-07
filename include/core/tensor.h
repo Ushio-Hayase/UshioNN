@@ -34,9 +34,9 @@ class Tensor
     Tensor(const ::std::vector<uint64_t>& shape, void* gpu_ptr, DType type);
 
     Tensor(const Tensor& other) = delete;
-    Tensor operator=(const Tensor& other) = delete;
+    Tensor& operator=(const Tensor& other) = delete;
     Tensor(Tensor&& other) = default;
-    Tensor operator=(Tensor&& other);
+    Tensor& operator=(Tensor&& other) = default;
 
     ~Tensor() = default;
 
@@ -47,7 +47,7 @@ class Tensor
 
     Tensor& operator*=(const Tensor& other);
 
-    template <ScalarType T> Tensor& operator*=(const T& scalar);
+    Tensor& operator*=(const float scalar);
 
     void allocateGpuMem(size_t total_bytes);
     void allocateCpuMem(size_t total_bytes);
@@ -106,7 +106,8 @@ class Tensor
 
     std::vector<uint64_t> calculateStrides();
 
-    void addToThisGpu(const Tensor& other, DType type);
+    void addAssignGpu(const Tensor& other, DType type);
+    void mulAssignGpu(const float& scalar);
 
     void matrixMultiplyCpu(const float* a, size_t a_rows, size_t a_cols,
                            const float* b, size_t b_rows, size_t b_cols,

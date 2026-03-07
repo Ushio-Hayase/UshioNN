@@ -43,7 +43,7 @@ __global__ void add<nunet::fp8_e5m2_t>(nunet::fp8_e5m2_t* src,
     }
 }
 
-void nunet::Tensor::addToThisGpu(const nunet::Tensor& other, DType type)
+void nunet::Tensor::addAssignGpu(const nunet::Tensor& other, DType type)
 {
     dim3 GridDims(256);
     dim3 BlockDims(256);

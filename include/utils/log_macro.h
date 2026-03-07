@@ -9,6 +9,22 @@ namespace nunet
 {
 namespace utils
 {
+
+#if defined(_MSC_VER)
+// Windows MSVC
+#define DEBUG_BREAK() DEBUG_BREAK()
+#elif defined(__clang__)
+// Linux/macOS Clang
+#define DEBUG_BREAK() __builtin_debugtrap()
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+// Linux GCC (x86/x64)
+#define DEBUG_BREAK() __asm__ volatile("int $0x03")
+#else
+// Fallback (Other Linux/Unix architectures)
+#include <signal.h>
+#define DEBUG_BREAK() raise(SIGTRAP)
+#endif
+
 #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
 #define LOG_INFO(format, ...)                                                  \
     ::nunet::utils::Logger::getInstance().write(                               \
@@ -31,7 +47,7 @@ namespace utils
         if (!(condition))                                                      \
         {                                                                      \
             LOG_ERROR("Assertion Failed: {}", #condition);                     \
-            __debugbreak();                                                    \
+            DEBUG_BREAK();                                                     \
         }                                                                      \
     } while (false)
 
@@ -42,7 +58,7 @@ namespace utils
         {                                                                      \
             LOG_ERROR("Assertion Failed: {} == {}. val1: {}, val2: {}", #val1, \
                       #val2, (val1), (val2));                                  \
-            __debugbreak();                                                    \
+            DEBUG_BREAK();                                                     \
         }                                                                      \
     } while (false)
 
@@ -53,7 +69,7 @@ namespace utils
         {                                                                      \
             LOG_ERROR("Assertion Failed : {} != {}. val1: {}, val2: {}",       \
                       #val1, #val2, (val1), (val2));                           \
-            __debugbreak();                                                    \
+            DEBUG_BREAK();                                                     \
         }                                                                      \
     } while (false)
 
@@ -63,7 +79,7 @@ namespace utils
         if (!(condition))                                                      \
         {                                                                      \
             LOG_ERROR(#message);                                               \
-            __debugbreak();                                                    \
+            DEBUG_BREAK();                                                     \
         }                                                                      \
     } while (false);
 

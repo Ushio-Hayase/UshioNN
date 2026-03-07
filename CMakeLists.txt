@@ -10,12 +10,12 @@ option(USE_CUDA "Build for NVIDIA CUDA" ON)
 option(USE_CPU "Build for CPU" ON)
 
 set(CUDA_ARCHITECTURES 120)
+set(CMAKE_CUDA_ARCHITECTURES 120)
 
 option(USE_SIMD "Use SIMD" ON)
 option(USE_AVX "Build with AVX" ON)
 option(USE_AVX2 "Build with AVX2" ON)
-option(USE_AVX512 "Bulid with AVX512" ON)
-
+option(USE_AVX512 "Build with AVX512" ON)
 
 add_subdirectory(src)
 
@@ -27,8 +27,8 @@ if (USE_AVX512)
         )
     else ()
         target_compile_options(nunet_lib PRIVATE
-                $<$<COMPILE_LANGUAGE:CXX>:-mavx512f -mavx512vl -mavx512bw -mavx512dq>
-                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-mavx512f,-mavx512vl,-mavx512bw,-mavx512dq>
+                $<$<COMPILE_LANGUAGE:CXX>:-mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512fp16>
+                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-mavx512f,-mavx512vl,-mavx512bw,-mavx512dq -mavx512fp16>
         )
     endif ()
 elseif (USE_AVX2)
@@ -70,16 +70,15 @@ endif ()
 
 if (USE_SIMD)
     target_compile_definitions(nunet_lib PRIVATE USE_SIMD)
-endif ()
-
-if (USE_AVX512)
-    target_compile_definitions(nunet_lib PRIVATE USE_AVX512)
-endif ()
-if (USE_AVX2)
-    target_compile_definitions(nunet_lib PRIVATE USE_AVX2)
-endif ()
-if (USE_AVX)
-    target_compile_definitions(nunet_lib PRIVATE USE_AVX)
+    if (USE_AVX512)
+        target_compile_definitions(nunet_lib PRIVATE USE_AVX512)
+    endif ()
+    if (USE_AVX2)
+        target_compile_definitions(nunet_lib PRIVATE USE_AVX2)
+    endif ()
+    if (USE_AVX)
+        target_compile_definitions(nunet_lib PRIVATE USE_AVX)
+    endif ()
 endif ()
 
 if (USE_CUDA)
