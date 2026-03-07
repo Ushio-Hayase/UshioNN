@@ -14,7 +14,7 @@ TEST(TensorConstructorTest, ConstructorWithValidCPUPointerTest)
     EXPECT_NE(tensor.getCpuPtr(), nullptr);
     EXPECT_EQ(tensor.getGpuPtr(), nullptr);
 }
-//
-// TEST(TensorTest, GetValidElemSize) {}
+
+TEST(TensorTest, GetValidElemSize) {}
 //
 // TEST(TensorTest, AddAssignTest) {}

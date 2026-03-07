@@ -86,13 +86,7 @@ class Tensor
   private:
     struct CudaDeleter
     {
-        void operator()(void* ptr) const
-        {
-            if (ptr)
-            {
-                cudaFree(ptr);
-            }
-        }
+        void operator()(void* ptr) const;
     };
 
     /// @brief 메모리 해제를 위한 커스텀 Deleter,
