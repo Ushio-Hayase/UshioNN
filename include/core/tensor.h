@@ -61,10 +61,10 @@ class Tensor
     size_t getTotalBytes() const;
     size_t getShapeSize() const;
 
-    const void* const getCpuPtr() const;
-    const void* const getGpuPtr() const;
-    void* const getCpuPtrMutable();
-    void* const getGpuPtrMutable();
+    const void* getCpuPtr() const;
+    const void* getGpuPtr() const;
+    void* getCpuPtrMutable();
+    void* getGpuPtrMutable();
 
     std::vector<size_t> calculateDotResultShape(const Tensor& b) const;
 
@@ -81,7 +81,7 @@ class Tensor
     /// @return 차원이 교환된 새로운 텐서
     Tensor& permute(size_t dim1, size_t dim2);
 
-    uint64_t elementSize(DType type);
+    uint64_t elementSize();
 
   private:
     struct CudaDeleter
@@ -104,7 +104,7 @@ class Tensor
         }
     };
 
-    std::vector<uint64_t> calculateStrides();
+    std::vector<size_t> calculateStrides() const;
 
     void addAssignGpu(const Tensor& other, DType type);
     void mulAssignGpu(const float& scalar);

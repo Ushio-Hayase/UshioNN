@@ -300,7 +300,7 @@ Tensor& Tensor::operator+=(const Tensor& other)
             fp16_t* this_cpu_ptr = static_cast<fp16_t*>(cpu_data_ptr_.get());
             fp16_t* other_cpu_ptr =
                 static_cast<fp16_t*>(other.cpu_data_ptr_.get());
-            for (int i = 0; i < total_bytes_ / elementSize(type_); ++i)
+            for (int i = 0; i < total_bytes_ / elementSize(); ++i)
                 *(this_cpu_ptr + i) += *(other_cpu_ptr + i);
             break;
         }
@@ -695,9 +695,9 @@ Tensor& Tensor::operator*=(const float scalar)
     void* Tensor::getCpuPtrMutable() { return cpu_data_ptr_.get(); }
     void* Tensor::getGpuPtrMutable() { return gpu_data_ptr_.get(); }
 
-    uint64_t Tensor::elementSize(DType type)
+    uint64_t Tensor::elementSize()
     {
-        switch (type)
+        switch (type_)
         {
         case DType::FP64:
             return sizeof(double);
@@ -716,6 +716,21 @@ Tensor& Tensor::operator*=(const float scalar)
         default:
             return 0;
         }
+    }
+
+    std::vector<size_t> Tensor::calculateStrides() const
+    {
+        std::vector<size_t> strides(shape_size_);
+
+        size_t stride_cnt = 1;
+
+        for (int i = shape_size_ - 1; i >= 0; --i)
+        {
+            strides[i] = stride_cnt;
+            stride_cnt *= shape_[i];
+        }
+
+        return strides;
     }
 
 } // namespace nunet
