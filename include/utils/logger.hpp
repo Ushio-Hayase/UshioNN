@@ -4,7 +4,7 @@
 #pragma once
 #include <cstdint>
 
-#if defined(_WIN_32)
+#if defined(_WIN32)
 #include <Windows.h>
 #else
 #include <unistd.h>

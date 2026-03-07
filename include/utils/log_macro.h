@@ -12,7 +12,7 @@ namespace utils
 
 #if defined(_MSC_VER)
 // Windows MSVC
-#define DEBUG_BREAK() DEBUG_BREAK()
+#define DEBUG_BREAK() __debugbreak()
 #elif defined(__clang__)
 // Linux/macOS Clang
 #define DEBUG_BREAK() __builtin_debugtrap()

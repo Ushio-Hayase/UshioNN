@@ -56,7 +56,7 @@ elseif (USE_CUDA)
             ${CUDAToolkit_INCLUDE_DIRS})
     target_link_libraries(nunet_lib
             PUBLIC
-            ${CUDAToolkit_LIBRARIES}
+            CUDA::cudart
     )
 
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 project(nunet LANGUAGES CXX)
 
-set(NUNET_BUILD_TESTING OFF)
+set(NUNET_BUILD_TESTING ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -83,8 +83,8 @@ endif ()
 
 if (USE_CUDA)
     message(STATUS "Found CUDA: ${CUDAToolkit_LIBRARY_ROOT}")
-    message(STATUS "CUDA Libraries Directory: ${CUDAToolkit_LIBRARY_DIR}")
-    message(STATUS "CUDA Include DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
+    message(STATUS "CUDA Libraries Directory:  ${CUDAToolkit_LIBRARY_DIR}")
+    message(STATUS "CUDA Include Directory: ${CUDAToolkit_INCLUDE_DIRS}")
     message(STATUS "CUDA Architectures: ${CUDA_ARCHITECTURES}")
 endif ()
 
