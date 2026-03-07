@@ -2,6 +2,14 @@
 
 #include "cuda/cuda_utils.cuh"
 
+void nunet::Tensor::CudaDeleter::operator()(void* ptr) const
+{
+    if (ptr)
+    {
+        cudaFree(ptr);
+    }
+}
+
 template <nunet::ScalarType T>
 __global__ void add(T* src, const T* other, size_t total_elements)
 {
