@@ -515,6 +515,7 @@ Tensor& Tensor::operator*=(const float scalar)
 #elif SIMD_LEVEL == 0
                 for (size_t i = start; i < end; ++i)
                     src[i] *= scalar;
+
 #endif
             };
 
@@ -562,25 +563,26 @@ Tensor& Tensor::operator*=(const float scalar)
             size_t chunk_size = total_elements / number_of_thread;
             chunk_size &= ~(align_step - 1);
 
-        auto worker = [](fp16_t* src, const float& scalar, size_t start,
-                         size_t end) {
+            auto worker = [](fp16_t* src, const float& scalar, size_t start,
+                             size_t end) {
 #if SIMD_LEVEL == 4
-            size_t i = start;
-            size_t limit = end - ((end - start) & ~31ULL);
-            for (; i < limit; i += 32)
-            {
-                const __m512h data_origin(_mm512_load_ph(src + i));
+                size_t i = start;
+                size_t limit = end - ((end - start) & ~31ULL);
+                for (; i < limit; i += 32)
+                {
+                    const __m512h data_origin(_mm512_load_ph(src + i));
 #if defined(_MSC_VER)
 
-                const __m128 f_vec = _mm_set_ss(scalar);
-                const __m128i h_vec =
-                    _mm_cvtps_ph(f_vec, _MM_FROUND_TO_NEAREST_INT);
-                const uint16_t h_val =
-                    static_cast<unsigned short>(_mm_extract_epi16(h_vec, 0));
-                __m512i vec_i = _mm512_set1_epi16(h_val);
-                const __m512h data_other(_mm512_castsi512_ph(vec_i));
-                _mm512_store_ps(src + i,
-                                _mm512_mul_ph(data_origin, data_other));
+                    const __m128 f_vec = _mm_set_ss(scalar);
+                    const __m128i h_vec =
+                        _mm_cvtps_ph(f_vec, _MM_FROUND_TO_NEAREST_INT);
+                    const uint16_t h_val = static_cast<unsigned short>(
+                        _mm_extract_epi16(h_vec, 0));
+                    __m512i vec_i = _mm512_set1_epi16(h_val);
+                    const __m512h data_other(_mm512_castsi512_ph(vec_i));
+                    _mm512_store_ph(src + i,
+                                    _mm512_mul_ph(data_origin, data_other));
+                }
 #else
                     const _Float16 scalar_copy = static_cast<_Float16>(scalar);
                     const __m512h data_other(_mm512_set1_ph(scalar_copy));
@@ -588,11 +590,11 @@ Tensor& Tensor::operator*=(const float scalar)
                                     _mm512_mul_ph(data_origin, data_other));
                 }
 
+#endif
                 for (; i < end; ++i)
                 {
                     src[i] *= scalar;
                 }
-#endif
 
 #elif SIMD_LEVEL == 3 || SIMD_LEVEL == 2
                 size_t i = start;
@@ -632,7 +634,6 @@ Tensor& Tensor::operator*=(const float scalar)
                     src[i] *= scalar;
 #endif
             };
-
             std::vector<std::thread> threads;
             if (number_of_thread <= 1)
             {
@@ -657,7 +658,9 @@ Tensor& Tensor::operator*=(const float scalar)
             for (auto& t : threads)
                 t.join();
             break;
-        } case DType::BF16: {
+        }
+
+        case DType::BF16: {
             bf16_t* this_cpu_ptr = static_cast<bf16_t*>(cpu_data_ptr_.get());
             // TODO: BF16형 텐서 *= 연산자 구현 필요
             break;
@@ -675,62 +678,62 @@ Tensor& Tensor::operator*=(const float scalar)
             break;
         }
         }
-        }
-        else if (location_ == DataLocation::DEVICE)
-        {
-            mulAssignGpu(scalar);
-        }
-
-        return *this;
     }
-
-    std::vector<size_t> Tensor::getShape() const { return shape_; }
-    DataLocation Tensor::getDevice() const { return location_; }
-    DType Tensor::getType() const { return type_; }
-    size_t Tensor::getTotalBytes() const { return total_bytes_; }
-    size_t Tensor::getShapeSize() const { return shape_size_; }
-
-    const void* Tensor::getCpuPtr() const { return cpu_data_ptr_.get(); }
-    const void* Tensor::getGpuPtr() const { return gpu_data_ptr_.get(); }
-    void* Tensor::getCpuPtrMutable() { return cpu_data_ptr_.get(); }
-    void* Tensor::getGpuPtrMutable() { return gpu_data_ptr_.get(); }
-
-    uint64_t Tensor::elementSize()
+    else if (location_ == DataLocation::DEVICE)
     {
-        switch (type_)
-        {
-        case DType::FP64:
-            return sizeof(double);
-        case DType::FP32:
-            return sizeof(float);
-        case DType::FP16:
-            return 2;
-        case DType::BF16:
-            return 2;
-        case DType::FP8_e4m3:
-            return 1;
-        case DType::FP8_e5m2:
-            return 1;
-        case DType::FP4:
-            return 1; // 4 bits but 1 byte of storage
-        default:
-            return 0;
-        }
+        mulAssignGpu(scalar);
     }
 
-    std::vector<size_t> Tensor::calculateStrides() const
+    return *this;
+}
+
+std::vector<size_t> Tensor::getShape() const { return shape_; }
+DataLocation Tensor::getDevice() const { return location_; }
+DType Tensor::getType() const { return type_; }
+size_t Tensor::getTotalBytes() const { return total_bytes_; }
+size_t Tensor::getShapeSize() const { return shape_size_; }
+
+const void* Tensor::getCpuPtr() const { return cpu_data_ptr_.get(); }
+const void* Tensor::getGpuPtr() const { return gpu_data_ptr_.get(); }
+void* Tensor::getCpuPtrMutable() { return cpu_data_ptr_.get(); }
+void* Tensor::getGpuPtrMutable() { return gpu_data_ptr_.get(); }
+
+uint64_t Tensor::elementSize()
+{
+    switch (type_)
     {
-        std::vector<size_t> strides(shape_size_);
-
-        size_t stride_cnt = 1;
-
-        for (int i = shape_size_ - 1; i >= 0; --i)
-        {
-            strides[i] = stride_cnt;
-            stride_cnt *= shape_[i];
-        }
-
-        return strides;
+    case DType::FP64:
+        return sizeof(double);
+    case DType::FP32:
+        return sizeof(float);
+    case DType::FP16:
+        return 2;
+    case DType::BF16:
+        return 2;
+    case DType::FP8_e4m3:
+        return 1;
+    case DType::FP8_e5m2:
+        return 1;
+    case DType::FP4:
+        return 1; // 4 bits but 1 byte of storage
+    default:
+        return 0;
     }
+}
+
+std::vector<size_t> Tensor::calculateStrides() const
+{
+    std::vector<size_t> strides(shape_size_);
+
+    size_t stride_cnt = 1;
+
+    for (int i = shape_size_ - 1; i >= 0; --i)
+    {
+        strides[i] = stride_cnt;
+        stride_cnt *= shape_[i];
+    }
+
+    return strides;
+}
 
 } // namespace nunet

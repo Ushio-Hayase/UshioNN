@@ -90,6 +90,7 @@ class Tensor
         {
             if (ptr)
             {
+                cudaFree(ptr);
             }
         }
     };
@@ -100,7 +101,11 @@ class Tensor
         void operator()(void* ptr) const
         {
             if (ptr)
+#if defined(_MSC_VER)
+                _aligned_free(ptr);
+#else
                 std::free(ptr);
+#endif
         }
     };
 
@@ -139,13 +144,10 @@ class Tensor
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
-/**
- * @brief Take two one-dimensional tensors and perform an inner product.
- *
- * @param lhs The front one-dimensional tensor to perform the inner product
- * @param rhs The backward one-dimensional tensor to perform the inner product
- * @return Tensor Resulting tensor
- */
+/// @brief Take two one-dimensional tensors and perform an inner product.
+/// @param lhs The front one-dimensional tensor to perform the inner product
+/// @param rhs The backward one-dimensional tensor to perform the inner product
+/// @return Tensor Resulting tensor
 Tensor dot(const Tensor& lhs, const Tensor& rhs);
 
 /**
