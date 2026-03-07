@@ -16,7 +16,7 @@ class Tensor
 {
   public:
     // --- 생성자 및 소멸자 ---
-    Tensor();
+    Tensor() = default;
 
     Tensor(::std::vector<uint64_t> shape, DType type = DType::FP32);
 
@@ -124,15 +124,15 @@ class Tensor
     std::unique_ptr<void, HostDeleter> cpu_data_ptr_ = nullptr;
     std::unique_ptr<void, CudaDeleter> gpu_data_ptr_ = nullptr;
 
-    size_t total_bytes_;
+    size_t total_bytes_ = 0;
 
     std::vector<size_t> shape_;
-    size_t shape_size_;
+    size_t shape_size_ = 0;
 
     std::vector<size_t> strides_;
 
     DataLocation location_ = DataLocation::NONE;
-    DType type_;
+    DType type_ = DType::FP32;
 };
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);

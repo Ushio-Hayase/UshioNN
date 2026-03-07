@@ -12,7 +12,6 @@
 
 namespace nunet
 {
-Tensor::Tensor() : total_bytes_(0), shape_size_(0), type_(DType::FP32) {}
 
 Tensor::Tensor(::std::vector<uint64_t> shape, DType type)
     : shape_(shape), type_(type), location_(DataLocation::HOST), total_bytes_(1)
