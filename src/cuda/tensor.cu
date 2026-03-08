@@ -1,4 +1,6 @@
 #include "core/tensor.h"
+#include "utils/common.h"
+#include "utils/log_macro.h"
 
 #include "cuda/cuda_utils.cuh"
 
@@ -193,5 +195,36 @@ void nunet::Tensor::mulAssignGpu(const float& scalar)
     case DType::FP4: {
         // TODO: FP4일경우 연산 추가 필요
     }
+    }
+}
+
+void nunet::Tensor::to(DataLocation location)
+{
+    ASSERT_MESSAGE(location_ != DataLocation::NONE, "Tensor not assigned");
+
+    if (location_ == location)
+    {
+        LOG_WARN("Tensor is already in the same position");
+        return;
+    }
+
+    if (location == DataLocation::HOST)
+    {
+        void* ptr = nullptr;
+        cudaMalloc(&ptr, total_bytes_);
+        gpu_data_ptr_.reset(ptr);
+
+        cudaMemcpy(gpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_,
+                   cudaMemcpyHostToDevice);
+
+        cpu_data_ptr_.reset();
+        cpu_data_ptr_ = nullptr;
+    }
+    else
+    {
+        cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, elementSize()));
+
+        cudaFree(gpu_data_ptr_.get());
+        gpu_data_ptr_ = nullptr;
     }
 }
