@@ -37,11 +37,11 @@ CheckOptions:
   # 3. 함수 및 메서드 (Functions & Methods) -> camelCase
   # -------------------------------------------------------------------------
   - key: readability-identifier-naming.GlobalFunctionCase
-    value: camelBack
+    value: lower_case
   - key: readability-identifier-naming.FunctionCase
-    value: camelBack
+    value: lower_case
   - key: readability-identifier-naming.MethodCase
-    value: camelBack
+    value: lower_case
 
   # -------------------------------------------------------------------------
   # 4. 타입 및 클래스 (Types & Classes) -> PascalCase
