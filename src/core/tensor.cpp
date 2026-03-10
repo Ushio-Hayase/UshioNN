@@ -56,6 +56,14 @@ template Tensor::Tensor(const std::vector<size_t>&, const fp4_t*, DataLocation);
 
 Tensor Tensor::transpose(size_t dim1, size_t dim2) const
 {
+    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
+    ASSERT_MESSAGE(dim1 < dim(),
+                   "Ranks of the passed parameter are not the same as those of "
+                   "the tensor.");
+    ASSERT_MESSAGE(dim2 < dim(),
+                   "Ranks of the passed parameter are not the same as those of "
+                   "the tensor.");
+
     std::vector<size_t> new_shape = this->shape();
     std::vector<size_t> new_strides = this->strides();
 
@@ -71,6 +79,7 @@ Tensor Tensor::transpose(size_t dim1, size_t dim2) const
 
 Tensor Tensor::permute(const std::vector<size_t>& order) const
 {
+    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
     ASSERT_MESSAGE(order.size() == dim(),
                    "Ranks of the passed parameter are not the same as those of "
                    "the tensor.");
@@ -99,6 +108,12 @@ Tensor Tensor::permute(const std::vector<size_t>& order) const
 
     return Tensor(new_impl);
     ;
+}
+
+Tensor Tensor::view(const std::vector<size_t>& shape) const
+{
+    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
+    ASSERT_MESSAGE(is_contiguous(), "Tensor is not continuous");
 }
 
 } // namespace nunet

@@ -43,7 +43,7 @@ class Tensor
         const; // 연속적이면 view, 아니면 clone후 view
 
     Tensor clone() const; // 깊은 복사
-    Tensor contiguos()
+    Tensor contiguous()
         const; // 텐서가 비연속적이면 복사본, 연속적이면 자신 반환
 
     Tensor to(DataLocation location) const;

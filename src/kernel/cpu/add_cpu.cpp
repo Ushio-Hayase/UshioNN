@@ -33,6 +33,10 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
     ASSERT_MESSAGE(tensor1.device() == tensor2.device(),
                    "Both tensors must be in the same device.");
 
+    Tensor _result = result.is_contiguous() ? result : result.contiguous();
+    Tensor _tensor1 = tensor1.is_contiguous() ? tensor1 : tensor1.contiguous();
+    Tensor _tensor2 = tensor1.is_contiguous() ? tensor2 : tensor2.contiguous();
+
     uint32_t number_of_thread = std::thread::hardware_concurrency();
 
     if (number_of_thread == 0)
@@ -43,10 +47,10 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
     switch (type)
     {
     case DType::FP64: {
-        double* tensor1_data = tensor1.data_ptr<double>();
-        double* tensor2_data = tensor2.data_ptr<double>();
-        double* result_data = result.data_ptr<double>();
-        size_t total_elements = result.numel();
+        double* tensor1_data = _tensor1.data_ptr<double>();
+        double* tensor2_data = _tensor2.data_ptr<double>();
+        double* result_data = _result.data_ptr<double>();
+        size_t total_elements = _result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4
@@ -143,10 +147,10 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
         break;
     }
     case DType::FP32: {
-        float* tensor1_data = tensor1.data_ptr<float>();
-        float* tensor2_data = tensor2.data_ptr<float>();
-        float* result_data = result.data_ptr<float>();
-        size_t total_elements = result.numel();
+        float* tensor1_data = _tensor1.data_ptr<float>();
+        float* tensor2_data = _tensor2.data_ptr<float>();
+        float* result_data = _result.data_ptr<float>();
+        size_t total_elements = _result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4
