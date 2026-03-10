@@ -1,8 +1,11 @@
 //
 // Created by UshioHayase on 3/8/2026.
 //
+#pragma once
 
-#ifndef NUNET_MUL_CPU_H
-#define NUNET_MUL_CPU_H
+#include "core/tensor.h"
 
-#endif // NUNET_MUL_CPU_H
+namespace nunet
+{
+void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar) {}
+} // namespace nunet

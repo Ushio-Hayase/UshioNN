@@ -29,9 +29,9 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
     ASSERT_MESSAGE(tensor1.shape() == tensor2.shape(),
                    "Two tensors have different sizes.");
     ASSERT_MESSAGE(result.device() == tensor1.device(),
-                   "Both tensors must be in the same position.");
+                   "Both tensors must be in the same device.");
     ASSERT_MESSAGE(tensor1.device() == tensor2.device(),
-                   "Both tensors must be in the same position.");
+                   "Both tensors must be in the same device.");
 
     uint32_t number_of_thread = std::thread::hardware_concurrency();
 
