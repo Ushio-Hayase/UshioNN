@@ -13,7 +13,18 @@ namespace ushionn
 class TensorImpl
 {
   public:
+    /// @brief 새로운 Storage를 할당하며 생성
+    /// @param shape 생성될 텐서의 차원
+    /// @param type 생성될 텐서의 타입
+    /// @param location 생성될 텐서의 장치
     TensorImpl(std::vector<size_t> shape, DType type, DataLocation location);
+
+    /// @brief 기존 Storage를 공유하는 텐서 생성
+    /// @param storage 공유할 Storage 포인터
+    /// @param shape 생성될 텐서의 차원
+    /// @param strides 생성될 텐서의 strides
+    /// @param offset 생성될 텐서의 offset
+    /// @param type 생성될 텐서의 타입
     TensorImpl(std::shared_ptr<Storage> storage, std::vector<size_t> shape,
                std::vector<size_t> strides, size_t offset, DType type);
 

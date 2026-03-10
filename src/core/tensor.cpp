@@ -114,6 +114,8 @@ Tensor Tensor::view(const std::vector<size_t>& shape) const
 {
     ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
     ASSERT_MESSAGE(is_contiguous(), "Tensor is not continuous");
+
+    std::vector<size_t> new_strides = impl_->
 }
 
 } // namespace ushionn
