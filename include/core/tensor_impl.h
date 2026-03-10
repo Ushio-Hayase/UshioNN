@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace nunet
+namespace ushionn
 {
 class TensorImpl
 {
@@ -50,4 +50,4 @@ class TensorImpl
     DType type_;
     std::shared_ptr<Storage> storage_;
 };
-} // namespace nunet
+} // namespace ushionn

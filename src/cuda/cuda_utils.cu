@@ -9,7 +9,7 @@
 
 
 
-namespace nunet::cuda::utils
+namespace ushionn::cuda::utils
 {
 
 void handleCudaError(cudaError_t err_code, const char* file, int line,
@@ -47,9 +47,9 @@ void printGpuMemoryUsageImpl(const std::string& tag)
         // common.h의 formatBytes 사용 (utils 네임스페이스 명시)
         LOG_INFO("[{}] - Free: {} / Total: {}: (Used:{})",
                  (tag.empty() ? "GPU Memory" : tag),
-                 nunet::utils::formatBytes(free_bytes),
-                 nunet::utils::formatBytes(total_bytes),
-                 nunet::utils::formatBytes(total_bytes - free_bytes));
+                 ushionn::utils::formatBytes(free_bytes),
+                 ushionn::utils::formatBytes(total_bytes),
+                 ushionn::utils::formatBytes(total_bytes - free_bytes));
     }
     else
     {

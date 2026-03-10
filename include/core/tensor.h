@@ -9,7 +9,7 @@
 #include <memory> // for std::unique_ptr
 #include <vector>
 
-namespace nunet
+namespace ushionn
 {
 
 static ::std::atomic<uint64_t> tensor_uid_counter = 1000;
@@ -74,4 +74,4 @@ class Tensor
     std::shared_ptr<TensorImpl> impl_;
 };
 
-} // namespace nunet
+} // namespace ushionn

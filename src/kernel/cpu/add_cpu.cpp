@@ -9,7 +9,7 @@
 
 #include <thread>
 
-namespace nunet
+namespace ushionn
 {
 void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
                      const Tensor& tensor2)
@@ -265,4 +265,4 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
     }
 }
 
-} // namespace nunet
+} // namespace ushionn

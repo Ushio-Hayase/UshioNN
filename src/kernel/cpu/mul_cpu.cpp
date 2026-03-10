@@ -6,7 +6,7 @@
 
 #include <thread>
 
-namespace nunet
+namespace ushionn
 {
 void scalr_mul_kernel(Tensor& result, const Tensor& src, float scalar)
 {

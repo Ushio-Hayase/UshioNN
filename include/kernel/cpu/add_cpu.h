@@ -4,7 +4,7 @@
 #pragma once
 #include "core/tensor.h"
 
-namespace nunet::cpu
+namespace ushionn::cpu
 {
 void add_kernel(Tensor& result, const Tensor& tensor1, const Tensor& tensor2);
 }

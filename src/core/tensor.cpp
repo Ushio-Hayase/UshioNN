@@ -9,7 +9,7 @@
 
 #include <cmath>
 
-namespace nunet
+namespace ushionn
 {
 
 Tensor::Tensor(std::vector<size_t> shape, DType type, DataLocation location)
@@ -116,4 +116,4 @@ Tensor Tensor::view(const std::vector<size_t>& shape) const
     ASSERT_MESSAGE(is_contiguous(), "Tensor is not continuous");
 }
 
-} // namespace nunet
+} // namespace ushionn
