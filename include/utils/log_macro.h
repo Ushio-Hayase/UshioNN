@@ -5,9 +5,7 @@
 
 #include "utils/logger.hpp"
 
-namespace nunet
-{
-namespace utils
+namespace ushionn::utils
 {
 
 #if defined(_MSC_VER)
@@ -27,18 +25,18 @@ namespace utils
 
 #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
 #define LOG_INFO(format, ...)                                                  \
-    ::nunet::utils::Logger::getInstance().write(                               \
-        ::nunet::utils::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__,      \
+    ::ushionn::utils::Logger::getInstance().write(                             \
+        ::ushionn::utils::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__,    \
         format, ##__VA_ARGS__)
 
 #define LOG_WARN(format, ...)                                                  \
-    ::nunet::utils::Logger::getInstance().write(                               \
-        ::nunet::utils::LogLevel::Warning, __FILE__, __LINE__, __FUNCTION__,   \
+    ::ushionn::utils::Logger::getInstance().write(                             \
+        ::ushionn::utils::LogLevel::Warning, __FILE__, __LINE__, __FUNCTION__, \
         format, ##__VA_ARGS__)
 
 #define LOG_ERROR(format, ...)                                                 \
-    ::nunet::utils::Logger::getInstance().write(                               \
-        ::nunet::utils::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__,     \
+    ::ushionn::utils::Logger::getInstance().write(                             \
+        ::ushionn::utils::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__,   \
         format, ##__VA_ARGS__)
 
 #define ASSERT(condition)                                                      \
@@ -94,5 +92,4 @@ namespace utils
 #define ASSERT_EQ(val1, val2) (void(0))
 #define ASSERT_NE(val1, val2) (void(0))
 #endif
-} // namespace utils
-} // namespace nunet
+} // namespace ushionn::utils

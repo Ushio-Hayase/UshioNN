@@ -4,7 +4,7 @@
 
 #if defined(USE_CUDA)
 #include <string> // for std::string
-namespace nunet
+namespace ushionn
 {
 namespace cuda
 {
@@ -49,7 +49,7 @@ namespace utils
 inline void printGpuMemoryUsage(const std::string& tag = "")
 {
 #if defined(DEBUG) || defined(_DEBUG)
-    nunet::cuda::internal::printGpuMemoryUsageImpl(tag);
+    ushionn::cuda::internal::printGpuMemoryUsageImpl(tag);
 #else
     (void)tag; // unused parameter 경고 방지
 #endif

@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace nunet
+namespace ushionn
 {
 
 void* alignedMalloc(size_t size, size_t alignment);

@@ -3,7 +3,7 @@
 //
 
 #include "core/tensor_impl.h"
-namespace nunet
+namespace ushionn
 {
 TensorImpl::TensorImpl(std::vector<size_t> shape, DType type,
                        std::shared_ptr<Storage> storage)

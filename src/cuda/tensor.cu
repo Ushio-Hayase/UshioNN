@@ -4,7 +4,7 @@
 
 #include "cuda/cuda_utils.cuh"
 
-void nunet::Tensor::CudaDeleter::operator()(void* ptr) const
+void ushionn::Tensor::CudaDeleter::operator()(void* ptr) const
 {
     if (ptr)
     {
@@ -12,48 +12,48 @@ void nunet::Tensor::CudaDeleter::operator()(void* ptr) const
     }
 }
 
-template <nunet::ScalarType T>
+template <ushionn::ScalarType T>
 __global__ void add(T* src, const T* other, size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
         src[current_idx] += other[current_idx];
 }
 
 template <>
-__global__ void add<nunet::fp8_e4m3_t>(nunet::fp8_e4m3_t* src,
-                                       const nunet::fp8_e4m3_t* other,
+__global__ void add<ushionn::fp8_e4m3_t>(ushionn::fp8_e4m3_t* src,
+                                       const ushionn::fp8_e4m3_t* other,
                                        size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
     {
         // TODO: FP16으로 캐스팅하여 성능 향상 필요
         const float src_elem = static_cast<float>(src[current_idx]);
         const float other_elem = static_cast<float>(other[current_idx]);
-        src[current_idx] = nunet::fp8_e4m3_t(src_elem + other_elem);
+        src[current_idx] = ushionn::fp8_e4m3_t(src_elem + other_elem);
     }
 }
 
 template <>
-__global__ void add<nunet::fp8_e5m2_t>(nunet::fp8_e5m2_t* src,
-                                       const nunet::fp8_e5m2_t* other,
+__global__ void add<ushionn::fp8_e5m2_t>(ushionn::fp8_e5m2_t* src,
+                                       const ushionn::fp8_e5m2_t* other,
                                        size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
     {
         // TODO: FP16으로 캐스팅하여 성능 향상 필요
         const float src_elem = static_cast<float>(src[current_idx]);
         const float other_elem = static_cast<float>(other[current_idx]);
-        src[current_idx] = nunet::fp8_e5m2_t(src_elem + other_elem);
+        src[current_idx] = ushionn::fp8_e5m2_t(src_elem + other_elem);
     }
 }
 
-void nunet::Tensor::addAssignGpu(const nunet::Tensor& other, DType type)
+void ushionn::Tensor::addAssignGpu(const ushionn::Tensor& other, DType type)
 {
     dim3 GridDims(256);
     dim3 BlockDims(256);
@@ -110,46 +110,46 @@ void nunet::Tensor::addAssignGpu(const nunet::Tensor& other, DType type)
     }
 }
 
-template <nunet::ScalarType T>
+template <ushionn::ScalarType T>
 __global__ void mul(T* src, const float scalar, size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
         src[current_idx] *= scalar;
 }
 
 template <>
-__global__ void mul<nunet::fp8_e4m3_t>(nunet::fp8_e4m3_t* src,
+__global__ void mul<ushionn::fp8_e4m3_t>(ushionn::fp8_e4m3_t* src,
                                        const float scalar,
                                        size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
     {
         // TODO: FP16으로 캐스팅하여 성능 향상 필요
         const float src_elem = static_cast<float>(src[current_idx]);
-        src[current_idx] = nunet::fp8_e4m3_t(src_elem * scalar);
+        src[current_idx] = ushionn::fp8_e4m3_t(src_elem * scalar);
     }
 }
 
 template <>
-__global__ void mul<nunet::fp8_e5m2_t>(nunet::fp8_e5m2_t* src,
+__global__ void mul<ushionn::fp8_e5m2_t>(ushionn::fp8_e5m2_t* src,
                                        const float scalar,
                                        size_t total_elements)
 {
-    size_t current_idx = nunet::cuda::utils::getGlobalIdx();
+    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
 
     if (current_idx < total_elements)
     {
         // TODO: FP16으로 캐스팅하여 성능 향상 필요
         const float src_elem = static_cast<float>(src[current_idx]);
-        src[current_idx] = nunet::fp8_e5m2_t(src_elem * scalar);
+        src[current_idx] = ushionn::fp8_e5m2_t(src_elem * scalar);
     }
 }
 
-void nunet::Tensor::mulAssignGpu(const float& scalar)
+void ushionn::Tensor::mulAssignGpu(const float& scalar)
 {
     dim3 GridDims(256);
     dim3 BlockDims(256);
@@ -198,7 +198,7 @@ void nunet::Tensor::mulAssignGpu(const float& scalar)
     }
 }
 
-void nunet::Tensor::to(DataLocation location)
+void ushionn::Tensor::to(DataLocation location)
 {
     ASSERT_MESSAGE(location_ != DataLocation::NONE, "Tensor not assigned");
 

@@ -1,7 +1,7 @@
 //
 // Created by UshioHayase on 3/8/2026.
 //
-namespace nunet
+namespace ushionn
 {
 void* alignedMalloc(size_t size, size_t alignment)
 {

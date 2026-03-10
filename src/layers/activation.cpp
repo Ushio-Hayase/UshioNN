@@ -1,6 +1,6 @@
 #include "layers/activation.h"
 
-namespace nunet
+namespace ushionn
 {
 
 } // namespace nunet

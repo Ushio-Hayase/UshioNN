@@ -26,7 +26,7 @@
 #endif
 #endif
 
-namespace nunet
+namespace ushionn
 {
 
 struct FallbackBf16

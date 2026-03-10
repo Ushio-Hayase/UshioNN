@@ -6,7 +6,7 @@
 
 #include "core/allocator.h"
 
-namespace nunet
+namespace ushionn
 {
 Storage::Storage(size_t total_bytes)
     : total_bytes_(total_bytes), location_(DataLocation::HOST),
