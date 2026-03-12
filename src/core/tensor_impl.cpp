@@ -6,7 +6,7 @@
 namespace ushionn
 {
 TensorImpl::TensorImpl(std::vector<size_t> shape, DType type,
-                       DataLocation location)
+                       Device location)
     : shape_(shape), type_(type)
 {
     strides_ = calculate_default_strides(shape_);
@@ -22,11 +22,11 @@ TensorImpl::TensorImpl(std::vector<size_t> shape, DType type,
 
 const std::vector<size_t>& TensorImpl::shape() const { return shape_; }
 const std::vector<size_t>& TensorImpl::strides() const { return strides_; }
-size_t TensorImpl::dims() const { return shape_.size(); }
+size_t TensorImpl::dim() const { return shape_.size(); }
 size_t TensorImpl::numel() const { return total_elements_; }
 size_t TensorImpl::storage_offset() const { return storage_offset_; }
 DType TensorImpl::dtype() const { return type_; }
-DataLocation TensorImpl::device() const { return storage_->location(); }
+Device TensorImpl::device() const { return storage_->location(); }
 
 bool TensorImpl::is_contiguous() const
 {

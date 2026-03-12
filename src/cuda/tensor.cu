@@ -198,9 +198,9 @@ void ushionn::Tensor::mulAssignGpu(const float& scalar)
     }
 }
 
-void ushionn::Tensor::to(DataLocation location)
+void ushionn::Tensor::to(Device location)
 {
-    ASSERT_MESSAGE(location_ != DataLocation::NONE, "Tensor not assigned");
+    ASSERT_MESSAGE(location_ != Device::NONE, "Tensor not assigned");
 
     if (location_ == location)
     {
@@ -208,7 +208,7 @@ void ushionn::Tensor::to(DataLocation location)
         return;
     }
 
-    if (location == DataLocation::HOST)
+    if (location == Device::HOST)
     {
         void* ptr = nullptr;
         cudaMalloc(&ptr, total_bytes_);

@@ -10,9 +10,9 @@ namespace ushionn
 {
 void scalr_mul_kernel(Tensor& result, const Tensor& src, float scalar)
 {
-    ASSERT_MESSAGE(result.device() != DataLocation::NONE,
+    ASSERT_MESSAGE(result.device() != Device::NONE,
                    "Tensor not assigned.");
-    ASSERT_MESSAGE(src.device() != DataLocation::NONE, "Tensor not assigned.");
+    ASSERT_MESSAGE(src.device() != Device::NONE, "Tensor not assigned.");
     ASSERT_MESSAGE(result.dtype() == src.dtype(),
                    "Tensors have different type.");
     ASSERT_MESSAGE(result.device() == src.device(),

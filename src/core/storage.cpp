@@ -9,19 +9,19 @@
 namespace ushionn
 {
 Storage::Storage(size_t total_bytes)
-    : total_bytes_(total_bytes), location_(DataLocation::HOST),
+    : total_bytes_(total_bytes), location_(Device::HOST),
       data_(alignedMalloc(total_bytes, 64), HostDeleter)
 {
 }
 
-Storage::Storage(void* ptr, size_t total_bytes, DataLocation location,
+Storage::Storage(void* ptr, size_t total_bytes, Device location,
                  MemoryDeleter deleter)
     : total_bytes_(total_bytes), location_(location), data_(ptr, deleter)
 {
 }
 
 void* Storage::data() const { return data_.get(); }
-DataLocation Storage::location() const { return location_; }
+Device Storage::location() const { return location_; }
 size_t Storage::nbytes() const { return total_bytes_; }
 
 } // namespace nunet

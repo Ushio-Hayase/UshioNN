@@ -20,11 +20,10 @@ class Tensor
     Tensor() = default;
 
     Tensor(std::vector<size_t> shape, DType type = DType::FP32,
-           DataLocation location = DataLocation::HOST);
+           Device location = Device::HOST);
 
     template <ScalarType T>
-    Tensor(const std::vector<size_t>& shape, const T* ptr,
-           DataLocation location);
+    Tensor(const std::vector<size_t>& shape, const T* ptr, Device location);
 
     explicit Tensor(std::shared_ptr<TensorImpl> impl) : impl_(impl) {}
 
@@ -46,7 +45,7 @@ class Tensor
     Tensor contiguous()
         const; // 텐서가 비연속적이면 복사본, 연속적이면 자신 반환
 
-    Tensor to(DataLocation location) const;
+    Tensor to(Device location) const;
     Tensor to(DType type) const;
     Tensor cpu() const;
     Tensor cuda() const;
@@ -62,7 +61,7 @@ class Tensor
     size_t dim() const;
     size_t numel() const;
     DType dtype() const;
-    DataLocation device() const;
+    Device device() const;
     bool is_contiguous() const;
 
     template <ScalarType T> T* data_ptr() const

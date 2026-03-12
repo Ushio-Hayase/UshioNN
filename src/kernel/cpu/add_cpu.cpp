@@ -14,12 +14,9 @@ namespace ushionn
 void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
                      const Tensor& tensor2)
 {
-    ASSERT_MESSAGE(result.device() != DataLocation::NONE,
-                   "Tensor not assigned.");
-    ASSERT_MESSAGE(tensor1.device() != DataLocation::NONE,
-                   "Tensor not assigned.");
-    ASSERT_MESSAGE(tensor2.device() != DataLocation::NONE,
-                   "Tensor not assigned.");
+    ASSERT_MESSAGE(result.device() != Device::NONE, "Tensor not assigned.");
+    ASSERT_MESSAGE(tensor1.device() != Device::NONE, "Tensor not assigned.");
+    ASSERT_MESSAGE(tensor2.device() != Device::NONE, "Tensor not assigned.");
     ASSERT_MESSAGE(result.dtype() == tensor1.dtype(),
                    "The two tensors are of different types.");
     ASSERT_MESSAGE(tensor1.dtype() == tensor2.dtype(),

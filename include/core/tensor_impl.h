@@ -17,7 +17,7 @@ class TensorImpl
     /// @param shape 생성될 텐서의 차원
     /// @param type 생성될 텐서의 타입
     /// @param location 생성될 텐서의 장치
-    TensorImpl(std::vector<size_t> shape, DType type, DataLocation location);
+    TensorImpl(std::vector<size_t> shape, DType type, Device location);
 
     /// @brief 기존 Storage를 공유하는 텐서 생성
     /// @param storage 공유할 Storage 포인터
@@ -32,11 +32,11 @@ class TensorImpl
 
     const std::vector<size_t>& shape() const;
     const std::vector<size_t>& strides() const;
-    size_t dims() const;
+    size_t dim() const;
     size_t numel() const;
     size_t storage_offset() const;
     DType dtype() const;
-    DataLocation device() const;
+    Device device() const;
 
     bool is_contiguous() const;
 

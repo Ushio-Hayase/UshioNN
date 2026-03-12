@@ -14,18 +14,18 @@ class Storage
 {
   public:
     Storage(size_t total_bytes);
-    Storage(void* ptr, size_t total_bytes, DataLocation location,
+    Storage(void* ptr, size_t total_bytes, Device location,
             MemoryDeleter deleter);
     ~Storage() = default;
 
     void* data() const;
-    DataLocation location() const;
+    Device location() const;
     size_t nbytes() const;
 
   private:
     std::unique_ptr<void, MemoryDeleter> data_;
 
     size_t total_bytes_;
-    DataLocation location_;
+    Device location_;
 };
-} // namespace nunet
+} // namespace ushionn

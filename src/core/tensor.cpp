@@ -12,14 +12,13 @@
 namespace ushionn
 {
 
-Tensor::Tensor(std::vector<size_t> shape, DType type, DataLocation location)
+Tensor::Tensor(std::vector<size_t> shape, DType type, Device location)
 {
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
 }
 
 template <ScalarType T>
-Tensor::Tensor(const std::vector<size_t>& shape, const T* ptr,
-               DataLocation location)
+Tensor::Tensor(const std::vector<size_t>& shape, const T* ptr, Device location)
 {
     DType type;
     if constexpr (std::is_same_v<T, double>)
@@ -41,22 +40,17 @@ Tensor::Tensor(const std::vector<size_t>& shape, const T* ptr,
 }
 
 // 명시적 인스턴스화
-template Tensor::Tensor(const std::vector<size_t>&, const double*,
-                        DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const float*, DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const fp16_t*,
-                        DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const bf16_t*,
-                        DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const fp8_e4m3_t*,
-                        DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const fp8_e5m2_t*,
-                        DataLocation);
-template Tensor::Tensor(const std::vector<size_t>&, const fp4_t*, DataLocation);
+template Tensor::Tensor(const std::vector<size_t>&, const double*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const float*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const fp16_t*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const bf16_t*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const fp8_e4m3_t*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const fp8_e5m2_t*, Device);
+template Tensor::Tensor(const std::vector<size_t>&, const fp4_t*, Device);
 
 Tensor Tensor::transpose(size_t dim1, size_t dim2) const
 {
-    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
+    ASSERT_MESSAGE(device() != Device::NONE, "Tensor not assigned")
     ASSERT_MESSAGE(dim1 < dim(),
                    "Ranks of the passed parameter are not the same as those of "
                    "the tensor.");
@@ -79,7 +73,7 @@ Tensor Tensor::transpose(size_t dim1, size_t dim2) const
 
 Tensor Tensor::permute(const std::vector<size_t>& order) const
 {
-    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
+    ASSERT_MESSAGE(device() != Device::NONE, "Tensor not assigned")
     ASSERT_MESSAGE(order.size() == dim(),
                    "Ranks of the passed parameter are not the same as those of "
                    "the tensor.");
@@ -112,7 +106,7 @@ Tensor Tensor::permute(const std::vector<size_t>& order) const
 
 Tensor Tensor::view(const std::vector<size_t>& shape) const
 {
-    ASSERT_MESSAGE(device() != DataLocation::NONE, "Tensor not assigned")
+    ASSERT_MESSAGE(device() != Device::NONE, "Tensor not assigned")
     ASSERT_MESSAGE(is_contiguous(), "Tensor is not continuous");
 
     std::vector<size_t> new_strides = impl_->
