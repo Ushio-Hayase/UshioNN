@@ -1,6 +1,7 @@
 // include/nunet/core/tensor.h
 #pragma once
 
+#include "device.h"
 #include "tensor_impl.h"
 
 #include "core/type.h"
@@ -20,7 +21,7 @@ class Tensor
     Tensor() = default;
 
     Tensor(std::vector<size_t> shape, DType type = DType::FP32,
-           Device location = Device::HOST);
+           Device location);
 
     template <ScalarType T>
     Tensor(const std::vector<size_t>& shape, const T* ptr, Device location);

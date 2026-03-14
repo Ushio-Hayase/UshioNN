@@ -23,6 +23,10 @@ classDiagram
         class Storage {
             +void* ptr
         }
+        class IAllocator {
+            +allocate(size_t size) void**
+            +deallocate(void* ptr) void*
+        }
         class BaseAllocator~T~ {
             <<template>>
             +allocate(size_t size) void*
@@ -103,6 +107,7 @@ classDiagram
         class Strides {
             +transpose(size_t dim1, size_t dim2) void
             +view(const vector~size_t~ & shape) void
+            +broadcast(const Shape& other_shape) void
             +strides() const vector~size_t~ &
             -vector~size_t~ strides_
         }
@@ -119,10 +124,10 @@ classDiagram
             +forward(const Tensor& a, const Tensor& b) Tensor$
         }
         class ReLU {
-            +forward(const Tensor& a, const Tensor& b) Tensor$
+            +forward(const Tensor& a) Tensor$
         }
         class Softmax {
-            +forward(const Tensor& a, const Tensor& b) Tensor$
+            +forward(const Tensor& a, int dim) Tensor$
         }
     }
     namespace Layer {
@@ -131,14 +136,7 @@ classDiagram
             +forward(const Tensor& t) Tensor*
             +to(const Device& device) void*
             +load_weights(const unordered_map<std:: string, Tensor>& state_dict) void*
-            +name() string*
-        }
-        class Conv {
-            <<abstract>>
-            +forward(const Tensor& t) Tensor*
-            +to(const Device& device) void*
-            +load_weights(const unordered_map<std:: string, Tensor>& state_dict) void*
-            +name() string*
+            +name() const string*
         }
         class Conv1D {
             +forward(const Tensor& t) Tensor
@@ -171,13 +169,6 @@ classDiagram
             +name() string
             -weight_ Tensor
             -bias_ Tensor
-        }
-        class Norm {
-            <<abstract>>
-            +forward(const Tensor& t) Tensor*
-            +to(const Device& device) void*
-            +load_weights(const unordered_map<std:: string, Tensor>& state_dict) void*
-            +name() string*
         }
         class BatchNorm {
             +forward(const Tensor& t) Tensor
@@ -216,6 +207,10 @@ classDiagram
             +synchronize() void
             -stream_ cudaStream_t
         }
+        class KernelConfigurator {
+            +static dim3 get_grid_size(size_t total_elements);
+            +static dim3 get_block_size();
+        }
         class CudaEvent {
         }
         class DeviceContext {
@@ -227,7 +222,7 @@ classDiagram
     namespace Utils {
         class StateDict {
             +find(string str) Tensor
-            +append(string str, Tensor tensor) void
+            +append(string str, const Tensor& tensor) void
             -unordered_map~string, Tensor~ map_
         }
 
@@ -240,17 +235,16 @@ classDiagram
         }
     }
 
-    Allocator~CPUAllocator~ <|-- CPUAllocator
-    Allocator~CUDAAllocator~ <|-- CUDAAllocator
+    IAllocator <|-- BaseAllocator
+    BaseAllocator~CPUAllocator~ <|-- CPUAllocator
+    BaseAllocator~CUDAAllocator~ <|-- CUDAAllocator
     Tensor o-- TensorImpl
     TensorImpl o-- StorageImpl
     StorageImpl *-- Storage
-    ILayer <|-- Conv
     ILayer <|-- Linear
-    ILayer <|-- Norm
     ILayer <|-- Pooling
-    Conv <|-- Conv1D
-    Conv <|-- Conv2D
-    Conv <|-- Conv3D
-    Norm <|-- BatchNorm
+    ILayer <|-- Conv1D
+    ILayer <|-- Conv2D
+    ILayer <|-- Conv3D
+    ILayer <|-- BatchNorm
 

@@ -2,7 +2,7 @@
 // Created by UshioHayase on 3/8/2026.
 //
 #pragma once
-#include "storage.h"
+#include "storage_impl.h"
 #include "type.h"
 
 #include <memory>
@@ -25,7 +25,7 @@ class TensorImpl
     /// @param strides 생성될 텐서의 strides
     /// @param offset 생성될 텐서의 offset
     /// @param type 생성될 텐서의 타입
-    TensorImpl(std::shared_ptr<Storage> storage, std::vector<size_t> shape,
+    TensorImpl(std::shared_ptr<StorageImpl> storage, std::vector<size_t> shape,
                std::vector<size_t> strides, size_t offset, DType type);
 
     ~TensorImpl() = default;
@@ -47,7 +47,7 @@ class TensorImpl
         return static_cast<T*>(data());
     }
 
-    std::shared_ptr<Storage> storage() const { return storage_; }
+    std::shared_ptr<StorageImpl> storage() const { return storage_; }
 
   private:
     std::vector<size_t> calculate_default_strides(
@@ -59,6 +59,6 @@ class TensorImpl
     size_t storage_offset_;
 
     DType type_;
-    std::shared_ptr<Storage> storage_;
+    std::shared_ptr<StorageImpl> storage_;
 };
 } // namespace ushionn

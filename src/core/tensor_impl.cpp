@@ -16,7 +16,7 @@ TensorImpl::TensorImpl(std::vector<size_t> shape, DType type,
         switch (type_)
         {
         case DType::FP64:
-            storage_ = std::make_shared<Storage>();
+            storage_ = std::make_shared<StorageImpl>();
         }
 }
 
