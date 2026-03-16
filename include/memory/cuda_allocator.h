@@ -3,13 +3,13 @@
 //
 
 #pragma once
-#include "allocator.hpp"
+#include "allocator.h"
 
 namespace ushionn
 {
 namespace memory
 {
-class CUDAAllocator : BaseAllocator<CUDAAllocator>
+class CUDAAllocator final : public IAllocator
 {
   public:
     void* allocate(size_t size) override;

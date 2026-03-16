@@ -14,6 +14,7 @@ struct Device
         HOST,   // CPU 메모리에만 유효한 데이터 존재
         DEVICE, // GPU 메모리에만 유효한 데이터 존재
     };
-    int index_;
+    DeviceType type = DeviceType::HOST;
+    int index = 0;
 };
 } // namespace ushionn

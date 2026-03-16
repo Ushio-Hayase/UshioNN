@@ -30,29 +30,28 @@ class TensorImpl
 
     ~TensorImpl() = default;
 
-    const std::vector<size_t>& shape() const;
-    const std::vector<size_t>& strides() const;
-    size_t dim() const;
-    size_t numel() const;
-    size_t storage_offset() const;
-    DType dtype() const;
-    Device device() const;
+    [[nodiscard]] const std::vector<size_t>& shape() const;
+    [[nodiscard]] const std::vector<size_t>& strides() const;
+    [[nodiscard]] size_t dim() const;
+    [[nodiscard]] size_t numel() const;
+    [[nodiscard]] size_t storage_offset() const;
+    [[nodiscard]] DType dtype() const;
+    [[nodiscard]] Device device() const;
+    [[nodiscard]] size_t get_elem_size() const;
 
-    bool is_contiguous() const;
-
-    void* data() const;
+    [[nodiscard]] bool is_contiguous() const;
 
     template <ScalarType T> T* data_ptr() const
     {
-        return static_cast<T*>(data());
+        return static_cast<T*>(storage_->data());
     }
 
-    std::shared_ptr<StorageImpl> storage() const { return storage_; }
+    [[nodiscard]] std::shared_ptr<StorageImpl> storage() const;
+
+    static std::vector<size_t> calculate_default_strides(
+        const std::vector<size_t>& shape);
 
   private:
-    std::vector<size_t> calculate_default_strides(
-        const std::vector<size_t>& shape) const;
-
     std::vector<size_t> shape_;
     std::vector<size_t> strides_;
     size_t total_elements_;

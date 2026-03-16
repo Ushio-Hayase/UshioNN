@@ -4,17 +4,14 @@
 
 #pragma once
 
-#include "memory/allocator.hpp"
+#include "memory/allocator.h"
 
-namespace ushionn
+namespace ushionn::memory
 {
-namespace memory
-{
-class CPUAllocator : public BaseAllocator<CPUAllocator>
+class CPUAllocator final : public IAllocator
 {
   public:
     void* allocate(size_t size) override;
     void deallocate(void* ptr) override;
 };
-} // namespace memory
-} // namespace ushionn
+} // namespace ushionn::memory

@@ -3,21 +3,31 @@
 //
 
 #include "core/tensor_impl.h"
+
+#include <utility>
 namespace ushionn
 {
-TensorImpl::TensorImpl(std::vector<size_t> shape, DType type,
-                       Device location)
-    : shape_(shape), type_(type)
+TensorImpl::TensorImpl(std::vector<size_t> shape, DType type, Device device)
+    : shape_(shape), type_(type), total_elements_(1)
 {
     strides_ = calculate_default_strides(shape_);
 
     for (const auto& elem : shape_)
+        total_elements_ *= elem;
 
-        switch (type_)
-        {
-        case DType::FP64:
-            storage_ = std::make_shared<StorageImpl>();
-        }
+    storage_ = std::make_shared<StorageImpl>(total_elements_ * get_elem_size(),
+                                             device);
+}
+
+TensorImpl::TensorImpl(std::shared_ptr<StorageImpl> storage,
+                       std::vector<size_t> shape, std::vector<size_t> strides,
+                       size_t offset, DType type)
+    : storage_(std::move(storage)), shape_(std::move(shape)),
+      strides_(std::move(strides)), storage_offset_(offset), type_(type),
+      total_elements_(1)
+{
+    for (const auto& elem : shape_)
+        total_elements_ *= elem;
 }
 
 const std::vector<size_t>& TensorImpl::shape() const { return shape_; }
@@ -26,14 +36,37 @@ size_t TensorImpl::dim() const { return shape_.size(); }
 size_t TensorImpl::numel() const { return total_elements_; }
 size_t TensorImpl::storage_offset() const { return storage_offset_; }
 DType TensorImpl::dtype() const { return type_; }
-Device TensorImpl::device() const { return storage_->location(); }
+Device TensorImpl::device() const { return storage_->device(); }
+size_t TensorImpl::get_elem_size() const
+{
+    switch (type_)
+    {
+    case DType::FP64:
+        return 8;
+    case DType::FP32:
+        return 4;
+    case DType::FP16:
+        return 2;
+    case DType::BF16:
+        return 2;
+    case DType::FP8_e4m3:
+        return 1;
+    case DType::FP8_e5m2:
+        return 1;
+    case DType::FP4:
+        return 1;
+    default:
+        return 0;
+    }
+}
 
 bool TensorImpl::is_contiguous() const
 {
-    if (total_elements_ == 0 || shape_.empty())
+    if (total_elements_ == 0 || shape_.size() == 0)
         return true;
 
     size_t expected_stride = 1;
+
     for (int i = shape_.size() - 1; i >= 0; --i)
     {
         if (shape_[i] != 1)
@@ -43,6 +76,30 @@ bool TensorImpl::is_contiguous() const
     }
 
     return true;
+}
+
+std::shared_ptr<StorageImpl> TensorImpl::storage() const { return storage_; }
+
+std::vector<size_t> TensorImpl::calculate_default_strides(
+    const std::vector<size_t>& shape)
+{
+
+    const int ndim = shape.size();
+    std::vector<size_t> strides(ndim);
+
+    if (ndim == 0)
+    {
+        return strides;
+    }
+
+    strides[ndim - 1] = 1;
+
+    for (int i = ndim - 2; i >= 0; --i)
+    {
+        strides[i] = strides[i + 1] * shape[i + 1];
+    }
+
+    return strides;
 }
 
 } // namespace ushionn

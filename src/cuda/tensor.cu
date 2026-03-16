@@ -1,230 +1,128 @@
 #include "core/tensor.h"
-#include "utils/common.h"
-#include "utils/log_macro.h"
 
-#include "cuda/cuda_utils.cuh"
-
-void ushionn::Tensor::CudaDeleter::operator()(void* ptr) const
+template <typename T>
+__global__ void clone_kernel(
+    const T* src_data,         // 원본 비연속 텐서의 VRAM 데이터 포인터
+    T* dst_data,               // 대상 연속 텐서의 VRAM 데이터 포인터
+    const size_t* shape,       // VRAM에 복사된 차원 크기 배열
+    const size_t* src_strides, // VRAM에 복사된 원본 Stride 배열
+    const size_t* dst_strides, // VRAM에 복사된 대상 연속 Stride 배열
+    size_t ndim,               // 텐서의 차원 수
+    size_t total_elements,     // 텐서의 총 요소 개수
+    size_t src_base_offset     // 원본 텐서의 시작 오프셋
+)
 {
-    if (ptr)
+    // 1. 1D 스레드 인덱스 계산 (이 값이 연속된 메모리의 Flat Index가 됨)
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // 할당된 총 스레드 수가 총 요소 개수보다 많을 수 있으므로 경계 검사
+    if (idx >= total_elements)
+        return;
+
+    int remaining = idx;
+    int src_physical_offset = src_base_offset;
+
+    // 2. Flat Index -> ND-Index 변환 및 물리 오프셋 누적 (각 스레드가 병렬로
+    // 수행)
+    for (int d = 0; d < ndim; ++d)
     {
-        cudaFree(ptr);
+        int coord = remaining / dst_strides[d];
+        remaining %= dst_strides[d];
+        src_physical_offset += coord * src_strides[d];
     }
+
+    // 3. 글로벌 메모리(VRAM) 읽기 및 쓰기
+    // Global Memory 병합(Coalescing) 접근이 성립하여 VRAM 대역폭을 효율적으로
+    // 사용함
+    dst_data[idx] = src_data[src_physical_offset];
 }
 
-template <ushionn::ScalarType T>
-__global__ void add(T* src, const T* other, size_t total_elements)
+ushionn::Tensor ushionn::Tensor::clone_gpu() const
 {
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
+    const auto& _shape = shape();
+    const auto& _strides = strides();
+    const auto& type = dtype();
 
-    if (current_idx < total_elements)
-        src[current_idx] += other[current_idx];
-}
+    Tensor result(_shape, type);
+    int total_elements = result.numel();
+    int ndim = shape().size();
+    std::vector<size_t> dst_strides =
+        TensorImpl::calculate_default_strides(_shape);
 
-template <>
-__global__ void add<ushionn::fp8_e4m3_t>(ushionn::fp8_e4m3_t* src,
-                                       const ushionn::fp8_e4m3_t* other,
-                                       size_t total_elements)
-{
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
+    // 메타데이터를 Device(VRAM)로 전송하기 위한 임시 메모리 할당
+    size_t* d_shape;
+    size_t* d_src_strides;
+    size_t* d_dst_strides;
+    cudaMalloc(&d_shape, ndim * sizeof(size_t));
+    cudaMalloc(&d_src_strides, ndim * sizeof(size_t));
+    cudaMalloc(&d_dst_strides, ndim * sizeof(size_t));
 
-    if (current_idx < total_elements)
-    {
-        // TODO: FP16으로 캐스팅하여 성능 향상 필요
-        const float src_elem = static_cast<float>(src[current_idx]);
-        const float other_elem = static_cast<float>(other[current_idx]);
-        src[current_idx] = ushionn::fp8_e4m3_t(src_elem + other_elem);
-    }
-}
+    cudaMemcpy(d_shape, _shape.data(), ndim * sizeof(size_t),
+               cudaMemcpyHostToDevice);
+    cudaMemcpy(d_src_strides, _strides.data(), ndim * sizeof(size_t),
+               cudaMemcpyHostToDevice);
+    cudaMemcpy(d_dst_strides, dst_strides.data(), ndim * sizeof(size_t),
+               cudaMemcpyHostToDevice);
 
-template <>
-__global__ void add<ushionn::fp8_e5m2_t>(ushionn::fp8_e5m2_t* src,
-                                       const ushionn::fp8_e5m2_t* other,
-                                       size_t total_elements)
-{
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
-
-    if (current_idx < total_elements)
-    {
-        // TODO: FP16으로 캐스팅하여 성능 향상 필요
-        const float src_elem = static_cast<float>(src[current_idx]);
-        const float other_elem = static_cast<float>(other[current_idx]);
-        src[current_idx] = ushionn::fp8_e5m2_t(src_elem + other_elem);
-    }
-}
-
-void ushionn::Tensor::addAssignGpu(const ushionn::Tensor& other, DType type)
-{
-    dim3 GridDims(256);
-    dim3 BlockDims(256);
-
-    // TODO: FP8 이하 텐서코어 사용 로직 필요
+    // CUDA 그리드/블록 차원 설정
+    int blockSize = 256;
+    int gridSize = (total_elements + blockSize - 1) / blockSize;
 
     switch (type)
     {
     case DType::FP64: {
-        add<double><<<GridDims, BlockDims>>>(
-            static_cast<double*>(this->gpu_data_ptr_.get()),
-            static_cast<double*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(double));
+        clone_kernel<double><<<gridSize, blockSize>>>(
+            data_ptr<double>(), result.data_ptr<double>(), d_shape,
+            d_src_strides, d_dst_strides, ndim, total_elements,
+            impl_->storage_offset());
         break;
     }
     case DType::FP32: {
-        add<float><<<GridDims, BlockDims>>>(
-            static_cast<float*>(this->gpu_data_ptr_.get()),
-            static_cast<float*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(double));
+        clone_kernel<float><<<gridSize, blockSize>>>(
+            data_ptr<float>(), result.data_ptr<float>(), d_shape, d_src_strides,
+            d_dst_strides, ndim, total_elements, impl_->storage_offset());
         break;
     }
     case DType::FP16: {
-        add<fp16_t><<<GridDims, BlockDims>>>(
-            static_cast<fp16_t*>(this->gpu_data_ptr_.get()),
-            static_cast<fp16_t*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(fp16_t));
+        clone_kernel<fp16_t><<<gridSize, blockSize>>>(
+            data_ptr<fp16_t>(), result.data_ptr<fp16_t>(), d_shape,
+            d_src_strides, d_dst_strides, ndim, total_elements,
+            impl_->storage_offset());
         break;
     }
     case DType::BF16: {
-        add<bf16_t><<<GridDims, BlockDims>>>(
-            static_cast<bf16_t*>(this->gpu_data_ptr_.get()),
-            static_cast<bf16_t*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(bf16_t));
+        clone_kernel<bf16_t><<<gridSize, blockSize>>>(
+            data_ptr<bf16_t>(), result.data_ptr<bf16_t>(), d_shape,
+            d_src_strides, d_dst_strides, ndim, total_elements,
+            impl_->storage_offset());
         break;
     }
     case DType::FP8_e4m3: {
-        add<fp8_e4m3_t><<<GridDims, BlockDims>>>(
-            static_cast<fp8_e4m3_t*>(this->gpu_data_ptr_.get()),
-            static_cast<fp8_e4m3_t*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(fp8_e4m3_t));
+        clone_kernel<fp8_e4m3_t><<<gridSize, blockSize>>>(
+            data_ptr<fp8_e4m3_t>(), result.data_ptr<fp8_e4m3_t>(), d_shape,
+            d_src_strides, d_dst_strides, ndim, total_elements,
+            impl_->storage_offset());
         break;
     }
     case DType::FP8_e5m2: {
-        add<fp8_e5m2_t><<<GridDims, BlockDims>>>(
-            static_cast<fp8_e5m2_t*>(this->gpu_data_ptr_.get()),
-            static_cast<fp8_e5m2_t*>(other.gpu_data_ptr_.get()),
-            this->total_bytes_ / sizeof(fp8_e5m2_t));
+        clone_kernel<fp8_e5m2_t><<<gridSize, blockSize>>>(
+            data_ptr<fp8_e5m2_t>(), result.data_ptr<fp8_e5m2_t>(), d_shape,
+            d_src_strides, d_dst_strides, ndim, total_elements,
+            impl_->storage_offset());
         break;
     }
     case DType::FP4: {
-        // TODO: FP4일경우 연산 추가 필요
-    }
-    }
-}
-
-template <ushionn::ScalarType T>
-__global__ void mul(T* src, const float scalar, size_t total_elements)
-{
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
-
-    if (current_idx < total_elements)
-        src[current_idx] *= scalar;
-}
-
-template <>
-__global__ void mul<ushionn::fp8_e4m3_t>(ushionn::fp8_e4m3_t* src,
-                                       const float scalar,
-                                       size_t total_elements)
-{
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
-
-    if (current_idx < total_elements)
-    {
-        // TODO: FP16으로 캐스팅하여 성능 향상 필요
-        const float src_elem = static_cast<float>(src[current_idx]);
-        src[current_idx] = ushionn::fp8_e4m3_t(src_elem * scalar);
-    }
-}
-
-template <>
-__global__ void mul<ushionn::fp8_e5m2_t>(ushionn::fp8_e5m2_t* src,
-                                       const float scalar,
-                                       size_t total_elements)
-{
-    size_t current_idx = ushionn::cuda::utils::getGlobalIdx();
-
-    if (current_idx < total_elements)
-    {
-        // TODO: FP16으로 캐스팅하여 성능 향상 필요
-        const float src_elem = static_cast<float>(src[current_idx]);
-        src[current_idx] = ushionn::fp8_e5m2_t(src_elem * scalar);
-    }
-}
-
-void ushionn::Tensor::mulAssignGpu(const float& scalar)
-{
-    dim3 GridDims(256);
-    dim3 BlockDims(256);
-
-    switch (type_)
-    {
-    case DType::FP64: {
-        mul<double><<<GridDims, BlockDims>>>(
-            static_cast<double*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(double));
+        clone_kernel<fp4_t><<<gridSize, blockSize>>>(
+            data_ptr<fp4_t>(), result.data_ptr<fp4_t>(), d_shape, d_src_strides,
+            d_dst_strides, ndim, total_elements, impl_->storage_offset());
         break;
     }
-    case DType::FP32: {
-        mul<float><<<GridDims, BlockDims>>>(
-            static_cast<float*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(double));
-        break;
     }
-    case DType::FP16: {
-        mul<fp16_t><<<GridDims, BlockDims>>>(
-            static_cast<fp16_t*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(fp16_t));
-        break;
-    }
-    case DType::BF16: {
-        mul<bf16_t><<<GridDims, BlockDims>>>(
-            static_cast<bf16_t*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(bf16_t));
-        break;
-    }
-    case DType::FP8_e4m3: {
-        mul<fp8_e4m3_t><<<GridDims, BlockDims>>>(
-            static_cast<fp8_e4m3_t*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(fp8_e4m3_t));
-        break;
-    }
-    case DType::FP8_e5m2: {
-        mul<fp8_e5m2_t><<<GridDims, BlockDims>>>(
-            static_cast<fp8_e5m2_t*>(this->gpu_data_ptr_.get()), scalar,
-            this->total_bytes_ / sizeof(fp8_e5m2_t));
-        break;
-    }
-    case DType::FP4: {
-        // TODO: FP4일경우 연산 추가 필요
-    }
-    }
-}
+    cudaDeviceSynchronize();
 
-void ushionn::Tensor::to(Device location)
-{
-    ASSERT_MESSAGE(location_ != Device::NONE, "Tensor not assigned");
+    cudaFree(d_shape);
+    cudaFree(d_src_strides);
+    cudaFree(d_dst_strides);
 
-    if (location_ == location)
-    {
-        LOG_WARN("Tensor is already in the same position");
-        return;
-    }
-
-    if (location == Device::HOST)
-    {
-        void* ptr = nullptr;
-        cudaMalloc(&ptr, total_bytes_);
-        gpu_data_ptr_.reset(ptr);
-
-        cudaMemcpy(gpu_data_ptr_.get(), cpu_data_ptr_.get(), total_bytes_,
-                   cudaMemcpyHostToDevice);
-
-        cpu_data_ptr_.reset();
-        cpu_data_ptr_ = nullptr;
-    }
-    else
-    {
-        cpu_data_ptr_.reset(utils::alignedMalloc(total_bytes_, elementSize()));
-
-        cudaFree(gpu_data_ptr_.get());
-        gpu_data_ptr_ = nullptr;
-    }
+    return result;
 }

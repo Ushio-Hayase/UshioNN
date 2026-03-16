@@ -1,4 +1,5 @@
 constexpr unsigned int MULTI_THREAD_BASELINE = 10000;
+constexpr size_t MEMORY_ALIGNMENT = 64;
 
 // 그리드 차원
 #define GDim_X gridDim.x

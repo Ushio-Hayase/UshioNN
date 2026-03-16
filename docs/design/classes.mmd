@@ -27,11 +27,6 @@ classDiagram
             +allocate(size_t size) void**
             +deallocate(void* ptr) void*
         }
-        class BaseAllocator~T~ {
-            <<template>>
-            +allocate(size_t size) void*
-            +deallocate(void* ptr) void
-        }
         class CPUAllocator {
             +allocate(size_t size) void*
             +deallocate(void* ptr) void
@@ -39,6 +34,11 @@ classDiagram
         class CUDAAllocator {
             +allocate(size_t size) void *
             +deallocate(void* ptr) void*
+        }
+        class AllocatorAdapter {
+            +allocate(size_t size) void*
+            +deallocate() void
+            -IAllocator* allocator_
         }
         class MemoryPool {
             -Allocator alloc_;
@@ -235,9 +235,8 @@ classDiagram
         }
     }
 
-    IAllocator <|-- BaseAllocator
-    BaseAllocator~CPUAllocator~ <|-- CPUAllocator
-    BaseAllocator~CUDAAllocator~ <|-- CUDAAllocator
+    IAllocator <|-- CPUAllocator
+    IAllocator <|-- CUDAAllocator
     Tensor o-- TensorImpl
     TensorImpl o-- StorageImpl
     StorageImpl *-- Storage
