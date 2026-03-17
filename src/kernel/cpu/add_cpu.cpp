@@ -14,9 +14,12 @@ namespace ushionn
 void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
                      const Tensor& tensor2)
 {
-    ASSERT_MESSAGE(result.device() != Device::NONE, "Tensor not assigned.");
-    ASSERT_MESSAGE(tensor1.device() != Device::NONE, "Tensor not assigned.");
-    ASSERT_MESSAGE(tensor2.device() != Device::NONE, "Tensor not assigned.");
+    ASSERT_MESSAGE(result.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned.");
+    ASSERT_MESSAGE(tensor1.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned.");
+    ASSERT_MESSAGE(tensor2.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned.");
     ASSERT_MESSAGE(result.dtype() == tensor1.dtype(),
                    "The two tensors are of different types.");
     ASSERT_MESSAGE(tensor1.dtype() == tensor2.dtype(),
@@ -25,9 +28,9 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
                    "Two tensors have different sizes.");
     ASSERT_MESSAGE(tensor1.shape() == tensor2.shape(),
                    "Two tensors have different sizes.");
-    ASSERT_MESSAGE(result.device() == tensor1.device(),
+    ASSERT_MESSAGE(result.device().type == tensor1.device().type,
                    "Both tensors must be in the same device.");
-    ASSERT_MESSAGE(tensor1.device() == tensor2.device(),
+    ASSERT_MESSAGE(tensor1.device().type == tensor2.device().type,
                    "Both tensors must be in the same device.");
 
     Tensor _result = result.is_contiguous() ? result : result.contiguous();

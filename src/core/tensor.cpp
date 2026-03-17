@@ -1,12 +1,10 @@
 #include "core/tensor.h"
 
 #include "core/simd.h"
+#include "kernel/cpu/add_cpu.h"
 #include "memory/cuda_allocator.h"
-#include "utils/common.h"
 #include "utils/constant.h"
 #include "utils/log_macro.h"
-
-#include <emmintrin.h>
 
 #include <cmath>
 
@@ -195,7 +193,28 @@ Tensor Tensor::cuda() const
     return to(d);
 }
 
-Tensor& Tensor::operator+=(const Tensor& other) {}
+Tensor& Tensor::operator+=(const Tensor& other)
+{
+    ASSERT_MESSAGE(this->device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned");
+    ASSERT_MESSAGE(other.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned");
+    ASSERT_MESSAGE(this->device().type == other.device().type,
+                   "Both tensors must be on the same deivce");
+    ASSERT_MESSAGE(this->dtype() == other.dtype(),
+                   "Both tensors must have the same data type");
+    ASSERT_MESSAGE(this->shape() == other.shape(),
+                   "Both tensors must have the same shape");
+
+    if (this->device().type == Device::DeviceType::HOST)
+    {
+        cpu::add_kernel(*this, *this, other);
+    }
+    else if (this->device().type == Device::DeviceType::DEVICE)
+    {
+    }
+    return *this;
+}
 
 Tensor Tensor::clone_cpu() const
 {
