@@ -5,7 +5,7 @@
 
 #include "core/tensor.h"
 
-namespace ushionn
+namespace ushionn::cpu
 {
 void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar) {}
-} // namespace nunet
+} // namespace ushionn::cpu

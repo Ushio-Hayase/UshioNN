@@ -60,19 +60,20 @@ class Tensor
     friend Tensor operator+(const Tensor& lhs, const Tensor& rhs);
     friend Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
-    const std::vector<size_t>& shape() const;
-    const std::vector<size_t>& strides() const;
-    size_t dim() const;
-    size_t numel() const;
-    DType dtype() const;
-    Device device() const;
-    bool is_contiguous() const;
+    inline const std::vector<size_t>& shape() const;
+    inline const std::vector<size_t>& strides() const;
+    inline size_t dim() const;
+    inline size_t numel() const;
+    inline DType dtype() const;
+    inline Device device() const;
+    inline bool is_contiguous() const;
+    inline size_t get_elem_size() const;
 
     void* data() const;
 
     template <ScalarType T> T* data_ptr() const
     {
-        return impl_->data_ptr<T>();
+        return impl_->data_ptr<T>() + impl_->storage_offset();
     };
 
   private:

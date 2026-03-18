@@ -71,11 +71,11 @@ void cpu::add_kernel(Tensor& result, const Tensor& tensor1,
                          size_t end) {
 #if SIMD_LEVEL == 4
             size_t i = start;
-            size_t limit = end - ((end - start) & ~7ULL);
+            const size_t limit = end - ((end - start) & ~7ULL);
             for (; i < limit; i += 8)
             {
-                __m512d data1(_mm512_load_pd(tgt1 + i));
-                __m512d data2(_mm512_load_pd(tgt2 + i));
+                const __m512d data1(_mm512_load_pd(tgt1 + i));
+                const __m512d data2(_mm512_load_pd(tgt2 + i));
                 _mm512_store_pd(src + i, _mm512_add_pd(data1, data2));
             }
 

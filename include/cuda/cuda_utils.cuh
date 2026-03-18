@@ -55,7 +55,7 @@ inline void printGpuMemoryUsage(const std::string& tag = "")
 #endif
 }
 
-__device__ inline unsigned int getGlobalIdx()
+__device__ inline unsigned int get_global_idx()
 {
     return ((blockIdx.x * (blockDim.x * blockDim.y * blockDim.z)) +
             (blockIdx.y * (gridDim.x * blockDim.x * blockDim.y * blockDim.z)) +
@@ -67,6 +67,6 @@ __device__ inline unsigned int getGlobalIdx()
 
 } // namespace utils
 } // namespace cuda
-} // namespace nunet
+} // namespace ushionn
 
 #endif

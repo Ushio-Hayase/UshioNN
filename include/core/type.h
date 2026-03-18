@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -128,13 +129,36 @@ enum class DType
     FP64,     // double
 };
 
+inline std::string dtype_to_string(DType type)
+{
+    switch (type)
+    {
+    case DType::FP64:
+        return "FP64";
+    case DType::FP32:
+        return "FP32";
+    case DType::FP16:
+        return "FP16";
+    case DType::BF16:
+        return "BF16";
+    case DType::FP8_e4m3:
+        return "FP8_e4m3";
+    case DType::FP8_e5m2:
+        return "FP8_e5m2";
+    case DType::FP4:
+        return "FP4";
+    default:
+        return "";
+    }
+}
+
 /**
  * @brief Get the Dtype object
  *
  * @tparam T Data type to enumerate
  * @return constexpr DType Changed enumeration type data type
  */
-template <ScalarType T> constexpr DType getDtype()
+template <ScalarType T> constexpr DType get_dtype()
 {
     if constexpr (std::is_same_v<T, float>)
         return DType::FP32;
@@ -155,6 +179,5 @@ template <ScalarType T> constexpr DType getDtype()
         static_assert(sizeof(T) == 0, "Unsupported type mapping!");
     }
 }
-
 
 } // namespace ushionn

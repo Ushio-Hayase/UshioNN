@@ -2,8 +2,9 @@
 
 #include "core/simd.h"
 #include "kernel/cpu/add_cpu.h"
-#include "memory/cuda_allocator.h"
-#include "utils/constant.h"
+#include "kernel/cpu/mul_cpu.h"
+#include "kernel/gpu/add_gpu.h"
+#include "kernel/gpu/mul_gpu.h"
 #include "utils/log_macro.h"
 
 #include <cmath>
@@ -152,6 +153,8 @@ Tensor Tensor::clone() const
         return clone_gpu();
     }
     LOG_ERROR("Unsupported device type.");
+
+    return Tensor();
 }
 
 Tensor Tensor::contiguous() const
@@ -212,9 +215,37 @@ Tensor& Tensor::operator+=(const Tensor& other)
     }
     else if (this->device().type == Device::DeviceType::DEVICE)
     {
+        gpu::add_kernel(*this, *this, other);
     }
     return *this;
 }
+
+Tensor& Tensor::operator*=(const float scalar)
+{
+    ASSERT_MESSAGE(this->device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned");
+
+    if (this->device().type == Device::DeviceType::HOST)
+    {
+        cpu::scalar_mul_kernel(*this, *this, scalar);
+    }
+    else if (this->device().type == Device::DeviceType::DEVICE)
+    {
+        gpu::scalar_mul_kernel(*this, *this, scalar);
+    }
+    return *this;
+}
+
+const std::vector<size_t>& Tensor::shape() const { return impl_->shape(); }
+const std::vector<size_t>& Tensor::strides() const { return impl_->strides(); }
+size_t Tensor::dim() const { return impl_->dim(); }
+size_t Tensor::numel() const { return impl_->numel(); }
+DType Tensor::dtype() const { return impl_->dtype(); }
+Device Tensor::device() const { return impl_->device(); }
+bool Tensor::is_contiguous() const { return impl_->is_contiguous(); }
+size_t Tensor::get_elem_size() const { return impl_->get_elem_size(); }
+
+void* Tensor::data() const { return impl_->storage()->data(); }
 
 Tensor Tensor::clone_cpu() const
 {

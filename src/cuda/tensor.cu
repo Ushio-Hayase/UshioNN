@@ -1,26 +1,27 @@
 #include "core/tensor.h"
 
+#include "cuda/cuda_utils.cuh"
+
 template <typename T>
-__global__ void clone_kernel(
+__global__ static void clone_kernel(
     const T* src_data,         // 원본 비연속 텐서의 VRAM 데이터 포인터
     T* dst_data,               // 대상 연속 텐서의 VRAM 데이터 포인터
     const size_t* shape,       // VRAM에 복사된 차원 크기 배열
     const size_t* src_strides, // VRAM에 복사된 원본 Stride 배열
     const size_t* dst_strides, // VRAM에 복사된 대상 연속 Stride 배열
     size_t ndim,               // 텐서의 차원 수
-    size_t total_elements,     // 텐서의 총 요소 개수
-    size_t src_base_offset     // 원본 텐서의 시작 오프셋
+    size_t total_elements      // 텐서의 총 요소 개수
 )
 {
     // 1. 1D 스레드 인덱스 계산 (이 값이 연속된 메모리의 Flat Index가 됨)
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int idx = ushionn::cuda::utils::get_global_idx();
 
     // 할당된 총 스레드 수가 총 요소 개수보다 많을 수 있으므로 경계 검사
     if (idx >= total_elements)
         return;
 
     int remaining = idx;
-    int src_physical_offset = src_base_offset;
+    int src_physical_offset = 0;
 
     // 2. Flat Index -> ND-Index 변환 및 물리 오프셋 누적 (각 스레드가 병렬로
     // 수행)
