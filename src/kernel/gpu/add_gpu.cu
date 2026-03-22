@@ -13,8 +13,7 @@ static __global__ void add(T* src, const T* tensor1, const T* tensor2,
 {
 
     const size_t idx = cuda::utils::get_global_idx();
-    const size_t strides = blockDim.x * blockDim.y * blockDim.z * gridDim.x *
-                           gridDim.y * gridDim.z;
+    const size_t strides = cuda::utils::get_strides();
 
     for (size_t i = idx; i < total_elements; i += strides)
         src[idx] = tensor1[idx] + tensor2[idx];

@@ -12,7 +12,7 @@ namespace function
 class Softmax
 {
   public:
-    static Tensor& forward(const Tensor& a, int dim);
+    static Tensor forward(const Tensor& a, int dim);
 };
 } // namespace function
 } // namespace ushionn

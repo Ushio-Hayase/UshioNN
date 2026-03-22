@@ -1,6 +1,6 @@
 
 # --- 유닛 테스트 빌드 ---
-if (NUNET_BUILD_TESTING)
+if (USHIONN_BUILD_TESTING)
     find_package(GTest)
 
     enable_testing() # CTest 사용 활성화

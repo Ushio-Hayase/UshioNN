@@ -12,7 +12,7 @@ namespace function
 class ReLU
 {
   public:
-    static Tensor& forward(const Tensor& a);
+    static Tensor forward(const Tensor& a);
 };
 } // namespace function
 } // namespace ushionn

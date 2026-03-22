@@ -13,14 +13,15 @@
 
 namespace ushionn
 {
-
-static ::std::atomic<uint64_t> tensor_uid_counter = 1000;
-
 class Tensor
 {
   public:
     Tensor() = default;
 
+    /// @brief 새로운 텐서를 생성합니다.
+    /// @param shape 생성할 텐서 shape
+    /// @param type 생성할 텐서 type
+    /// @param device 생성하
     explicit Tensor(std::vector<size_t> shape, DType type = DType::FP32,
                     Device device = {});
 

@@ -12,7 +12,7 @@ namespace function
 class ElementWiseMul
 {
   public:
-    static Tensor& forward(const Tensor& a, const Tensor& b);
+    static Tensor forward(const Tensor& a, const Tensor& b);
 };
 } // namespace function
 } // namespace ushionn

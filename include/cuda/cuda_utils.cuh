@@ -55,15 +55,9 @@ inline void printGpuMemoryUsage(const std::string& tag = "")
 #endif
 }
 
-__device__ inline unsigned int get_global_idx()
-{
-    return ((blockIdx.x * (blockDim.x * blockDim.y * blockDim.z)) +
-            (blockIdx.y * (gridDim.x * blockDim.x * blockDim.y * blockDim.z)) +
-            (blockIdx.z *
-             (gridDim.y * gridDim.x * blockDim.x * blockDim.y * blockDim.z)) +
-            (threadIdx.x) + (threadIdx.y * blockDim.x) +
-            (threadIdx.z * (blockDim.x * blockDim.y)));
-}
+inline size_t get_global_idx();
+
+inline size_t get_strides();
 
 } // namespace utils
 } // namespace cuda

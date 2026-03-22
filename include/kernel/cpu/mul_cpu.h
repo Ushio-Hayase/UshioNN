@@ -7,5 +7,5 @@
 
 namespace ushionn::cpu
 {
-void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar) {}
+void scalar_mul_kernel(Tensor& result, const Tensor& src, const float scalar);
 } // namespace ushionn::cpu

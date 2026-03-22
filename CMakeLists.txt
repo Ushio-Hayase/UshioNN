@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
-project(nunet LANGUAGES CXX)
+project(ushionn LANGUAGES CXX)
 
-set(NUNET_BUILD_TESTING ON)
+set(USHIONN_BUILD_TESTING OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 

@@ -12,7 +12,7 @@ namespace function
 class Add
 {
   public:
-    static Tensor& forward(const Tensor& a, const Tensor& b);
+    static Tensor forward(const Tensor& a, const Tensor& b);
 };
 } // namespace function
 } // namespace ushionn

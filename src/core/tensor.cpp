@@ -1,6 +1,6 @@
 #include "core/tensor.h"
 
-#include "core/simd.h"
+#include "../../include/utils/simd.h"
 #include "kernel/cpu/add_cpu.h"
 #include "kernel/cpu/mul_cpu.h"
 #include "kernel/gpu/add_gpu.h"

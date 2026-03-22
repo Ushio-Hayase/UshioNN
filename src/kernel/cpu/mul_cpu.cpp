@@ -1,6 +1,6 @@
 #include "kernel/cpu/mul_cpu.h"
 
-#include "core/simd.h"
+#include "../../../include/utils/simd.h"
 #include "utils/constant.h"
 #include "utils/log_macro.h"
 
