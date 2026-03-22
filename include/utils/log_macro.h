@@ -71,12 +71,12 @@ namespace ushionn::utils
         }                                                                      \
     } while (false)
 
-#define ASSERT_MESSAGE(condition, message)                                     \
+#define ASSERT_MESSAGE(condition, message, ...)                                \
     do                                                                         \
     {                                                                          \
         if (!(condition))                                                      \
         {                                                                      \
-            LOG_ERROR(#message);                                               \
+            LOG_ERROR(message, ##__VA_ARGS__);                                 \
             DEBUG_BREAK();                                                     \
         }                                                                      \
     } while (false);

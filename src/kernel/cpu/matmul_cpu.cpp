@@ -29,11 +29,13 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     Tensor a_contiguous = a.is_contiguous() ? a : a.contiguous();
     Tensor b_contiguous = b.is_contiguous() ? b : b.contiguous();
 
-    DType type = result.dtype();
-    int dim = a.dim();
+    const DType type = result_contiguous.dtype();
+    const uint32_t a_dim = a_contiguous.dim();
+    const uint32_t b_dim = b_contiguous.dim();
 
-    if (dim == 1)
+    if (a_dim == 1 && b_dim == 1)
     {
+        ASSERT_MESSAGE(result, message)
     }
 }
 } // namespace ushionn::cpu
