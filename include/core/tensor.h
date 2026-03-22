@@ -61,14 +61,14 @@ class Tensor
     friend Tensor operator+(const Tensor& lhs, const Tensor& rhs);
     friend Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
-    inline const std::vector<size_t>& shape() const;
-    inline const std::vector<size_t>& strides() const;
-    inline size_t dim() const;
-    inline size_t numel() const;
-    inline DType dtype() const;
-    inline Device device() const;
-    inline bool is_contiguous() const;
-    inline size_t get_elem_size() const;
+    [[nodiscard]] const std::vector<size_t>& shape() const;
+    [[nodiscard]] const std::vector<size_t>& strides() const;
+    [[nodiscard]] size_t dim() const;
+    [[nodiscard]] size_t numel() const;
+    [[nodiscard]] DType dtype() const;
+    [[nodiscard]] Device device() const;
+    [[nodiscard]] bool is_contiguous() const;
+    [[nodiscard]] size_t get_elem_size() const;
 
     void* data() const;
 

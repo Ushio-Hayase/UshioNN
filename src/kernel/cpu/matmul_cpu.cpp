@@ -35,7 +35,6 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 
     if (a_dim == 1 && b_dim == 1)
     {
-        ASSERT_MESSAGE(result, message)
     }
 }
 } // namespace ushionn::cpu

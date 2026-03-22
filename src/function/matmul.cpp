@@ -121,9 +121,8 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
             gpu::matmul_kernel(result, a, b);
         return result;
     }
-    else if
-
-        return Tensor();
+    
+    return Tensor();
 }
 
 } // namespace ushionn::function

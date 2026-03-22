@@ -74,48 +74,43 @@ ushionn::Tensor ushionn::Tensor::clone_gpu() const
     case DType::FP64: {
         clone_kernel<double><<<gridSize, blockSize>>>(
             data_ptr<double>(), result.data_ptr<double>(), d_shape,
-            d_src_strides, d_dst_strides, ndim, total_elements,
-            impl_->storage_offset());
+            d_src_strides, d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::FP32: {
         clone_kernel<float><<<gridSize, blockSize>>>(
             data_ptr<float>(), result.data_ptr<float>(), d_shape, d_src_strides,
-            d_dst_strides, ndim, total_elements, impl_->storage_offset());
+            d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::FP16: {
         clone_kernel<fp16_t><<<gridSize, blockSize>>>(
             data_ptr<fp16_t>(), result.data_ptr<fp16_t>(), d_shape,
-            d_src_strides, d_dst_strides, ndim, total_elements,
-            impl_->storage_offset());
+            d_src_strides, d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::BF16: {
         clone_kernel<bf16_t><<<gridSize, blockSize>>>(
             data_ptr<bf16_t>(), result.data_ptr<bf16_t>(), d_shape,
-            d_src_strides, d_dst_strides, ndim, total_elements,
-            impl_->storage_offset());
+            d_src_strides, d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::FP8_e4m3: {
         clone_kernel<fp8_e4m3_t><<<gridSize, blockSize>>>(
             data_ptr<fp8_e4m3_t>(), result.data_ptr<fp8_e4m3_t>(), d_shape,
-            d_src_strides, d_dst_strides, ndim, total_elements,
-            impl_->storage_offset());
+            d_src_strides, d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::FP8_e5m2: {
         clone_kernel<fp8_e5m2_t><<<gridSize, blockSize>>>(
             data_ptr<fp8_e5m2_t>(), result.data_ptr<fp8_e5m2_t>(), d_shape,
-            d_src_strides, d_dst_strides, ndim, total_elements,
-            impl_->storage_offset());
+            d_src_strides, d_dst_strides, ndim, total_elements);
         break;
     }
     case DType::FP4: {
         clone_kernel<fp4_t><<<gridSize, blockSize>>>(
             data_ptr<fp4_t>(), result.data_ptr<fp4_t>(), d_shape, d_src_strides,
-            d_dst_strides, ndim, total_elements, impl_->storage_offset());
+            d_dst_strides, ndim, total_elements);
         break;
     }
     }
