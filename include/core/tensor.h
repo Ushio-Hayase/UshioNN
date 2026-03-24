@@ -21,7 +21,7 @@ class Tensor
     /// @brief 새로운 텐서를 생성합니다.
     /// @param shape 생성할 텐서 shape
     /// @param type 생성할 텐서 type
-    /// @param device 생성하
+    /// @param device 생성할 device
     explicit Tensor(std::vector<uint64_t> shape, DType type = DType::FP32,
                     Device device = {});
 
@@ -29,7 +29,7 @@ class Tensor
     Tensor(const std::vector<uint64_t>& shape, const T* ptr, Device device);
 
     Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
-    Tensor(std::shared_ptr<StorageImpl> impl, std::vector<uint64_t> shape,
+    Tensor(const Tensor& origin, std::vector<uint64_t> shape,
            std::vector<uint64_t> strides, uint64_t offset, DType type);
 
     ~Tensor() = default;
@@ -56,7 +56,7 @@ class Tensor
     [[nodiscard]] Tensor cuda() const;
 
     Tensor& operator+=(const Tensor& other);
-    Tensor& operator*=(const float scalar);
+    Tensor& operator*=(float scalar);
 
     friend Tensor operator+(const Tensor& lhs, const Tensor& rhs);
     friend Tensor operator*(const Tensor& lhs, const Tensor& rhs);
@@ -70,7 +70,7 @@ class Tensor
     [[nodiscard]] bool is_contiguous() const;
     [[nodiscard]] uint64_t get_elem_size() const;
 
-    void* data() const;
+    [[nodiscard]] void* data() const;
 
     template <ScalarType T> T* data_ptr() const
     {

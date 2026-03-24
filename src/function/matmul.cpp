@@ -109,8 +109,19 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
                 LOG_ERROR(error_msg);
             }
         }
+
+        std::vector<uint64_t> result_shape(a_dim);
+        result_shape[a_dim - 1] = expand_b_dim.back();
+        Tensor result(result_shape, a.dtype(), device);
+
+        Tensor expand_b(b, expand_b_dim, )
+
+            if (device.type == Device::DeviceType::HOST)
+                cpu::matmul_kernel(result, a, b);
     }
     else if (a_dim < b_dim)
+    {
+    }
 }
 
 } // namespace ushionn::function
