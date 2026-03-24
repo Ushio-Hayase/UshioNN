@@ -12,7 +12,7 @@
 namespace ushionn
 {
 
-Tensor::Tensor(std::vector<uint64_t> shape, DType type, Device location)
+Tensor::Tensor(const std::vector<uint64_t> shape, Device location, DType type)
 {
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
 }
@@ -172,8 +172,8 @@ Tensor Tensor::to(Device d) const
 {
     if (d.type == device().type)
         return *this;
-    
-    return Tensor(*this, shape(), strides(), impl_->storage_offset(), dtype());
+
+    return Tensor(shape(), device(), dtype());
 }
 
 Tensor Tensor::to(DType t) const
@@ -181,7 +181,7 @@ Tensor Tensor::to(DType t) const
     if (dtype() == t)
         return *this;
 
-    return Tensor(*this, shape(), strides(), impl_->storage_offset(), t);
+    return Tensor(shape(), device(), dtype());
 }
 
 Tensor Tensor::cpu() const
@@ -253,7 +253,7 @@ void* Tensor::data() const { return impl_->storage()->data(); }
 Tensor Tensor::clone_cpu() const
 {
     const auto& _shape = shape();
-    Tensor result(_shape, dtype(), device());
+    Tensor result(_shape, device(), dtype());
     int total_elements = result.numel();
     int ndim = _shape.size();
     std::vector<uint64_t> dst_strides =
