@@ -12,7 +12,7 @@
 namespace ushionn
 {
 
-Tensor::Tensor(std::vector<uint64_t> shape, DType type, Device location)
+Tensor::Tensor(const std::vector<uint64_t> shape, Device location, DType type)
 {
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
 }
@@ -51,11 +51,11 @@ template Tensor::Tensor(const std::vector<uint64_t>&, const fp8_e5m2_t*,
                         Device);
 template Tensor::Tensor(const std::vector<uint64_t>&, const fp4_t*, Device);
 
-Tensor::Tensor(std::shared_ptr<StorageImpl> storage,
-               std::vector<uint64_t> shape, std::vector<uint64_t> strides,
-               uint64_t offset, DType type)
-    : impl_(std::make_shared<TensorImpl>(storage, std::move(shape),
-                                         std::move(strides), offset, type))
+Tensor::Tensor(const Tensor& origin, std::vector<uint64_t> shape,
+               std::vector<uint64_t> strides, uint64_t offset, DType type)
+    : impl_(std::make_shared<TensorImpl>(origin.impl_->storage(),
+                                         std::move(shape), std::move(strides),
+                                         offset, type))
 {
 }
 
@@ -132,7 +132,7 @@ Tensor Tensor::view(const std::vector<uint64_t>& shape) const
     const std::vector<uint64_t> new_strides =
         TensorImpl::calculate_default_strides(shape);
 
-    return Tensor(impl_->storage(), shape, new_strides, impl_->storage_offset(),
+    return Tensor(*this, shape, new_strides, impl_->storage_offset(),
                   impl_->dtype());
 }
 
@@ -173,9 +173,7 @@ Tensor Tensor::to(Device d) const
     if (d.type == device().type)
         return *this;
 
-    std::shared_ptr<StorageImpl> s = std::make_shared<StorageImpl>(
-        *this->impl_->storage(), impl_->storage()->nbytes(), d);
-    return Tensor(s, shape(), strides(), impl_->storage_offset(), dtype());
+    return Tensor(shape(), device(), dtype());
 }
 
 Tensor Tensor::to(DType t) const
@@ -183,9 +181,7 @@ Tensor Tensor::to(DType t) const
     if (dtype() == t)
         return *this;
 
-    std::shared_ptr<StorageImpl> s = std::make_shared<StorageImpl>(
-        *this->impl_->storage(), impl_->storage()->nbytes(), device());
-    return Tensor(s, shape(), strides(), impl_->storage_offset(), t);
+    return Tensor(shape(), device(), dtype());
 }
 
 Tensor Tensor::cpu() const
@@ -257,7 +253,7 @@ void* Tensor::data() const { return impl_->storage()->data(); }
 Tensor Tensor::clone_cpu() const
 {
     const auto& _shape = shape();
-    Tensor result(_shape, dtype(), device());
+    Tensor result(_shape, device(), dtype());
     int total_elements = result.numel();
     int ndim = _shape.size();
     std::vector<uint64_t> dst_strides =

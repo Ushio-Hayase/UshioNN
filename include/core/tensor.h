@@ -21,15 +21,15 @@ class Tensor
     /// @brief 새로운 텐서를 생성합니다.
     /// @param shape 생성할 텐서 shape
     /// @param type 생성할 텐서 type
-    /// @param device 생성하
-    explicit Tensor(std::vector<uint64_t> shape, DType type = DType::FP32,
-                    Device device = {});
+    /// @param device 생성할 device
+    Tensor(const std::vector<uint64_t> shape, Device device = {},
+           DType type = DType::FP32);
 
     template <ScalarType T>
     Tensor(const std::vector<uint64_t>& shape, const T* ptr, Device device);
 
     Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
-    Tensor(std::shared_ptr<StorageImpl> impl, std::vector<uint64_t> shape,
+    Tensor(const Tensor& origin, std::vector<uint64_t> shape,
            std::vector<uint64_t> strides, uint64_t offset, DType type);
 
     ~Tensor() = default;
