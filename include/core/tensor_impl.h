@@ -17,7 +17,7 @@ class TensorImpl
     /// @param shape 생성될 텐서의 차원
     /// @param type 생성될 텐서의 타입
     /// @param location 생성될 텐서의 장치
-    TensorImpl(std::vector<size_t> shape, DType type, Device location);
+    TensorImpl(std::vector<uint64_t> shape, DType type, Device location);
 
     /// @brief 기존 Storage를 공유하는 텐서 생성
     /// @param storage 공유할 Storage 포인터
@@ -25,19 +25,20 @@ class TensorImpl
     /// @param strides 생성될 텐서의 strides
     /// @param offset 생성될 텐서의 offset
     /// @param type 생성될 텐서의 타입
-    TensorImpl(std::shared_ptr<StorageImpl> storage, std::vector<size_t> shape,
-               std::vector<size_t> strides, size_t offset, DType type);
+    TensorImpl(std::shared_ptr<StorageImpl> storage,
+               std::vector<uint64_t> shape, std::vector<uint64_t> strides,
+               uint64_t offset, DType type);
 
     ~TensorImpl() = default;
 
-    [[nodiscard]] const std::vector<size_t>& shape() const;
-    [[nodiscard]] const std::vector<size_t>& strides() const;
-    [[nodiscard]] size_t dim() const;
-    [[nodiscard]] size_t numel() const;
-    [[nodiscard]] size_t storage_offset() const;
+    [[nodiscard]] const std::vector<uint64_t>& shape() const;
+    [[nodiscard]] const std::vector<uint64_t>& strides() const;
+    [[nodiscard]] uint64_t dim() const;
+    [[nodiscard]] uint64_t numel() const;
+    [[nodiscard]] uint64_t storage_offset() const;
     [[nodiscard]] DType dtype() const;
     [[nodiscard]] Device device() const;
-    [[nodiscard]] size_t get_elem_size() const;
+    [[nodiscard]] uint64_t get_elem_size() const;
 
     [[nodiscard]] bool is_contiguous() const;
 
@@ -48,14 +49,14 @@ class TensorImpl
 
     [[nodiscard]] std::shared_ptr<StorageImpl> storage() const;
 
-    static std::vector<size_t> calculate_default_strides(
-        const std::vector<size_t>& shape);
+    static std::vector<uint64_t> calculate_default_strides(
+        const std::vector<uint64_t>& shape);
 
   private:
-    std::vector<size_t> shape_;
-    std::vector<size_t> strides_;
-    size_t total_elements_;
-    size_t storage_offset_;
+    std::vector<uint64_t> shape_;
+    std::vector<uint64_t> strides_;
+    uint64_t total_elements_;
+    uint64_t storage_offset_;
 
     DType type_;
     std::shared_ptr<StorageImpl> storage_;

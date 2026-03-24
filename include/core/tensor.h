@@ -22,15 +22,15 @@ class Tensor
     /// @param shape 생성할 텐서 shape
     /// @param type 생성할 텐서 type
     /// @param device 생성하
-    explicit Tensor(std::vector<size_t> shape, DType type = DType::FP32,
+    explicit Tensor(std::vector<uint64_t> shape, DType type = DType::FP32,
                     Device device = {});
 
     template <ScalarType T>
-    Tensor(const std::vector<size_t>& shape, const T* ptr, Device device);
+    Tensor(const std::vector<uint64_t>& shape, const T* ptr, Device device);
 
     Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
-    Tensor(std::shared_ptr<StorageImpl> impl, std::vector<size_t> shape,
-           std::vector<size_t> strides, size_t offset, DType type);
+    Tensor(std::shared_ptr<StorageImpl> impl, std::vector<uint64_t> shape,
+           std::vector<uint64_t> strides, uint64_t offset, DType type);
 
     ~Tensor() = default;
 
@@ -39,11 +39,11 @@ class Tensor
     Tensor(Tensor&&) = default;
     Tensor& operator=(Tensor&&) = default;
 
-    [[nodiscard]] Tensor transpose(size_t dim1, size_t dim2) const;
-    [[nodiscard]] Tensor permute(const std::vector<size_t>& order) const;
+    [[nodiscard]] Tensor transpose(uint64_t dim1, uint64_t dim2) const;
+    [[nodiscard]] Tensor permute(const std::vector<uint64_t>& order) const;
     [[nodiscard]] Tensor view(
-        const std::vector<size_t>& shape) const; // 메모리가 연속일 때만 성공
-    [[nodiscard]] Tensor reshape(const std::vector<size_t>& shape)
+        const std::vector<uint64_t>& shape) const; // 메모리가 연속일 때만 성공
+    [[nodiscard]] Tensor reshape(const std::vector<uint64_t>& shape)
         const; // 연속적이면 view, 아니면 clone후 view
 
     [[nodiscard]] Tensor clone() const; // 깊은 복사
@@ -61,14 +61,14 @@ class Tensor
     friend Tensor operator+(const Tensor& lhs, const Tensor& rhs);
     friend Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 
-    [[nodiscard]] const std::vector<size_t>& shape() const;
-    [[nodiscard]] const std::vector<size_t>& strides() const;
-    [[nodiscard]] size_t dim() const;
-    [[nodiscard]] size_t numel() const;
+    [[nodiscard]] const std::vector<uint64_t>& shape() const;
+    [[nodiscard]] const std::vector<uint64_t>& strides() const;
+    [[nodiscard]] uint64_t dim() const;
+    [[nodiscard]] uint64_t numel() const;
     [[nodiscard]] DType dtype() const;
     [[nodiscard]] Device device() const;
     [[nodiscard]] bool is_contiguous() const;
-    [[nodiscard]] size_t get_elem_size() const;
+    [[nodiscard]] uint64_t get_elem_size() const;
 
     void* data() const;
 

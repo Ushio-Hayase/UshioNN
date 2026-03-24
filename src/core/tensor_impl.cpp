@@ -7,7 +7,7 @@
 #include <utility>
 namespace ushionn
 {
-TensorImpl::TensorImpl(std::vector<size_t> shape, DType type, Device device)
+TensorImpl::TensorImpl(std::vector<uint64_t> shape, DType type, Device device)
     : shape_(shape), type_(type), total_elements_(1)
 {
     strides_ = calculate_default_strides(shape_);
@@ -20,8 +20,9 @@ TensorImpl::TensorImpl(std::vector<size_t> shape, DType type, Device device)
 }
 
 TensorImpl::TensorImpl(std::shared_ptr<StorageImpl> storage,
-                       std::vector<size_t> shape, std::vector<size_t> strides,
-                       size_t offset, DType type)
+                       std::vector<uint64_t> shape,
+                       std::vector<uint64_t> strides, uint64_t offset,
+                       DType type)
     : storage_(std::move(storage)), shape_(std::move(shape)),
       strides_(std::move(strides)), storage_offset_(offset), type_(type),
       total_elements_(1)
@@ -30,14 +31,14 @@ TensorImpl::TensorImpl(std::shared_ptr<StorageImpl> storage,
         total_elements_ *= elem;
 }
 
-const std::vector<size_t>& TensorImpl::shape() const { return shape_; }
-const std::vector<size_t>& TensorImpl::strides() const { return strides_; }
-size_t TensorImpl::dim() const { return shape_.size(); }
-size_t TensorImpl::numel() const { return total_elements_; }
-size_t TensorImpl::storage_offset() const { return storage_offset_; }
+const std::vector<uint64_t>& TensorImpl::shape() const { return shape_; }
+const std::vector<uint64_t>& TensorImpl::strides() const { return strides_; }
+uint64_t TensorImpl::dim() const { return shape_.size(); }
+uint64_t TensorImpl::numel() const { return total_elements_; }
+uint64_t TensorImpl::storage_offset() const { return storage_offset_; }
 DType TensorImpl::dtype() const { return type_; }
 Device TensorImpl::device() const { return storage_->device(); }
-size_t TensorImpl::get_elem_size() const
+uint64_t TensorImpl::get_elem_size() const
 {
     switch (type_)
     {
@@ -65,7 +66,7 @@ bool TensorImpl::is_contiguous() const
     if (total_elements_ == 0 || shape_.size() == 0)
         return true;
 
-    size_t expected_stride = 1;
+    uint64_t expected_stride = 1;
 
     for (int i = shape_.size() - 1; i >= 0; --i)
     {
@@ -80,12 +81,12 @@ bool TensorImpl::is_contiguous() const
 
 std::shared_ptr<StorageImpl> TensorImpl::storage() const { return storage_; }
 
-std::vector<size_t> TensorImpl::calculate_default_strides(
-    const std::vector<size_t>& shape)
+std::vector<uint64_t> TensorImpl::calculate_default_strides(
+    const std::vector<uint64_t>& shape)
 {
 
     const int ndim = shape.size();
-    std::vector<size_t> strides(ndim);
+    std::vector<uint64_t> strides(ndim);
 
     if (ndim == 0)
     {

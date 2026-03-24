@@ -12,13 +12,14 @@
 namespace ushionn
 {
 
-Tensor::Tensor(std::vector<size_t> shape, DType type, Device location)
+Tensor::Tensor(std::vector<uint64_t> shape, DType type, Device location)
 {
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
 }
 
 template <ScalarType T>
-Tensor::Tensor(const std::vector<size_t>& shape, const T* ptr, Device location)
+Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr,
+               Device location)
 {
     DType type;
     if constexpr (std::is_same_v<T, double>)
@@ -40,22 +41,25 @@ Tensor::Tensor(const std::vector<size_t>& shape, const T* ptr, Device location)
 }
 
 // 명시적 인스턴스화
-template Tensor::Tensor(const std::vector<size_t>&, const double*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const float*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const fp16_t*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const bf16_t*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const fp8_e4m3_t*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const fp8_e5m2_t*, Device);
-template Tensor::Tensor(const std::vector<size_t>&, const fp4_t*, Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const double*, Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const float*, Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const fp16_t*, Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const bf16_t*, Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const fp8_e4m3_t*,
+                        Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const fp8_e5m2_t*,
+                        Device);
+template Tensor::Tensor(const std::vector<uint64_t>&, const fp4_t*, Device);
 
-Tensor::Tensor(std::shared_ptr<StorageImpl> storage, std::vector<size_t> shape,
-               std::vector<size_t> strides, size_t offset, DType type)
+Tensor::Tensor(std::shared_ptr<StorageImpl> storage,
+               std::vector<uint64_t> shape, std::vector<uint64_t> strides,
+               uint64_t offset, DType type)
     : impl_(std::make_shared<TensorImpl>(storage, std::move(shape),
                                          std::move(strides), offset, type))
 {
 }
 
-Tensor Tensor::transpose(size_t dim1, size_t dim2) const
+Tensor Tensor::transpose(uint64_t dim1, uint64_t dim2) const
 {
     ASSERT_MESSAGE(device().type != Device::DeviceType::NONE,
                    "Tensor not assigned")
@@ -66,8 +70,8 @@ Tensor Tensor::transpose(size_t dim1, size_t dim2) const
                    "Ranks of the passed parameter are not the same as those of "
                    "the tensor.");
 
-    std::vector<size_t> new_shape = this->shape();
-    std::vector<size_t> new_strides = this->strides();
+    std::vector<uint64_t> new_shape = this->shape();
+    std::vector<uint64_t> new_strides = this->strides();
 
     std::swap(new_shape[dim1], new_shape[dim2]);
     std::swap(new_strides[dim1], new_strides[dim2]);
@@ -79,7 +83,7 @@ Tensor Tensor::transpose(size_t dim1, size_t dim2) const
     return Tensor(new_impl);
 }
 
-Tensor Tensor::permute(const std::vector<size_t>& order) const
+Tensor Tensor::permute(const std::vector<uint64_t>& order) const
 {
     ASSERT_MESSAGE(device().type != Device::DeviceType::NONE,
                    "Tensor not assigned")
@@ -87,15 +91,15 @@ Tensor Tensor::permute(const std::vector<size_t>& order) const
                    "Ranks of the passed parameter are not the same as those of "
                    "the tensor.");
 
-    size_t rank = dim();
+    uint64_t rank = dim();
 
-    const std::vector<size_t>& old_strides = strides();
-    const std::vector<size_t>& old_shape = shape();
+    const std::vector<uint64_t>& old_strides = strides();
+    const std::vector<uint64_t>& old_shape = shape();
 
-    std::vector<size_t> new_strides(rank);
-    std::vector<size_t> new_shape(rank);
+    std::vector<uint64_t> new_strides(rank);
+    std::vector<uint64_t> new_shape(rank);
 
-    for (size_t i = 0; i < rank; ++i)
+    for (uint64_t i = 0; i < rank; ++i)
     {
         ASSERT_MESSAGE(
             order[i] < rank,
@@ -113,26 +117,26 @@ Tensor Tensor::permute(const std::vector<size_t>& order) const
     ;
 }
 
-Tensor Tensor::view(const std::vector<size_t>& shape) const
+Tensor Tensor::view(const std::vector<uint64_t>& shape) const
 {
     ASSERT_MESSAGE(device().type != Device::DeviceType::NONE,
                    "Tensor not assigned")
     ASSERT_MESSAGE(is_contiguous(), "Tensor is not continuous");
 
-    size_t new_total_elems = 1;
+    uint64_t new_total_elems = 1;
     for (const auto& elem : shape)
         new_total_elems *= elem;
 
     ASSERT_MESSAGE(numel() == new_total_elems, "Shape sequence size mismatch.");
 
-    const std::vector<size_t> new_strides =
+    const std::vector<uint64_t> new_strides =
         TensorImpl::calculate_default_strides(shape);
 
     return Tensor(impl_->storage(), shape, new_strides, impl_->storage_offset(),
                   impl_->dtype());
 }
 
-Tensor Tensor::reshape(const std::vector<size_t>& shape) const
+Tensor Tensor::reshape(const std::vector<uint64_t>& shape) const
 {
     if (is_contiguous())
         return this->view(shape);
@@ -236,14 +240,17 @@ Tensor& Tensor::operator*=(const float scalar)
     return *this;
 }
 
-const std::vector<size_t>& Tensor::shape() const { return impl_->shape(); }
-const std::vector<size_t>& Tensor::strides() const { return impl_->strides(); }
-size_t Tensor::dim() const { return impl_->dim(); }
-size_t Tensor::numel() const { return impl_->numel(); }
+const std::vector<uint64_t>& Tensor::shape() const { return impl_->shape(); }
+const std::vector<uint64_t>& Tensor::strides() const
+{
+    return impl_->strides();
+}
+uint64_t Tensor::dim() const { return impl_->dim(); }
+uint64_t Tensor::numel() const { return impl_->numel(); }
 DType Tensor::dtype() const { return impl_->dtype(); }
 Device Tensor::device() const { return impl_->device(); }
 bool Tensor::is_contiguous() const { return impl_->is_contiguous(); }
-size_t Tensor::get_elem_size() const { return impl_->get_elem_size(); }
+uint64_t Tensor::get_elem_size() const { return impl_->get_elem_size(); }
 
 void* Tensor::data() const { return impl_->storage()->data(); }
 
@@ -253,9 +260,9 @@ Tensor Tensor::clone_cpu() const
     Tensor result(_shape, dtype(), device());
     int total_elements = result.numel();
     int ndim = _shape.size();
-    std::vector<size_t> dst_strides =
+    std::vector<uint64_t> dst_strides =
         TensorImpl::calculate_default_strides(_shape);
-    std::vector<size_t> coords(ndim);
+    std::vector<uint64_t> coords(ndim);
 
     const auto& strides = impl_->strides();
 
