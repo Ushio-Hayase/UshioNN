@@ -13,6 +13,8 @@ class Matmul
 {
   public:
     static Tensor forward(const Tensor& a, const Tensor& b);
+    static std::vector<uint64_t> calculate_matmul_size(
+        const std::vector<uint64_t>& a, const std::vector<uint64_t>& b);
 };
 } // namespace function
 } // namespace ushionn

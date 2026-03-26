@@ -28,166 +28,115 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
 
     const auto& a_shape = a.shape();
     const auto& b_shape = b.shape();
+    const auto& a_strides = a.strides();
+    const auto& b_strides = b.strides();
+
+    std::vector<uint64_t> a_shape_expand;
+    std::vector<uint64_t> b_shape_expand;
+    std::vector<uint64_t> a_strides_expand;
+    std::vector<uint64_t> b_strides_expand;
 
     if (a_dim == 1 && b_dim == 1)
     {
-        Tensor result({1}, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
-        return result;
     }
-    else if (a_dim == 1 && b_dim == 2)
+    else if (b_dim == 1)
     {
-
-        ASSERT_MESSAGE(a_shape[0] == b_shape[0],
-                       "Tensor a and Tensor b shapes cannot be multiplied ({} "
-                       "x {} and {} x {})",
-                       1, a_shape[0], b_shape[0], b_shape[1]);
-
-        Tensor result({b_shape[1]}, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
-        return result;
-    }
-    else if (a_dim == 2 && b_dim == 1)
-    {
-        ASSERT_MESSAGE(a_shape[1] == b_shape[0],
-                       "Tensor a and Tensor b shapes cannot be multiplied ({} "
-                       "x {} and {} x {})",
-                       a_shape[0], a_shape[1], b_shape[0], 1);
-        Tensor result({a_shape[0]}, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
-        return result;
-    }
-    else if (a_dim == 2 && b_dim == 2)
-    {
-        ASSERT_MESSAGE(a_shape[1] == b_shape[0],
-                       "Tensor a and Tensor b shapes cannot be multiplied ({} "
-                       "x {} and {} x {})",
-                       a_shape[0], a_shape[1], b_shape[0], b_shape[1]);
-        Tensor result({a_shape[0], b_shape[1]}, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
-        return result;
-    }
-    else if (a_dim > b_dim)
-    {
-        std::vector<uint64_t> expand_b_dim(a_dim);
-        for (int i = 0; i < a_dim - b_dim; ++i)
-            expand_b_dim[i] = 1;
-        expand_b_dim.insert(b_shape.begin(), b_dim);
-
-        for (int i = 0; i < a_dim - 2; ++i)
-        {
-            if (a_shape[i] == expand_b_dim[i] || expand_b_dim[i] == 1)
-            {
-                std::string error_msg =
-                    "Tensor a and Tensor b shapess cannot be multiplied (";
-                for (int i = 0; i < a_dim; ++i)
-                {
-                    error_msg += std::to_string(a_shape[i]);
-                    if (i != a_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += " and ";
-                for (int i = 0; i < a_dim; ++i)
-                {
-                    error_msg += std::to_string(a_shape[i]);
-                    if (i != a_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += ")";
-                LOG_ERROR(error_msg);
-            }
-        }
-
-        std::vector<uint64_t> result_shape(a_shape);
-        result_shape.[a_dim - 1] = b_shape.back();
-
-        Tensor result(result_shape, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
-
-        return result;
     }
     else if (a_dim < b_dim)
     {
-        std::vector<uint64_t> expand_a_dim(b_dim);
-        for (int i = 0; i < b_dim - a_dim; ++i)
-            expand_a_dim[i] = 1;
-        expand_a_dim.insert(a_shape.begin(), a_dim);
+        b_shape_expand = b_shape;
 
-        for (int i = 0; i < a_dim - 2; ++i)
-        {
-            if (b_shape[i] == expand_a_dim[i] || expand_a_dim[i] == 1)
-            {
-                std::string error_msg =
-                    "Tensor a and Tensor b shapess cannot be multiplied (";
-                for (int i = 0; i < b_dim; ++i)
-                {
-                    error_msg += std::to_string(b_shape[i]);
-                    if (i != b_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += " and ";
-                for (int i = 0; i < b_dim; ++i)
-                {
-                    error_msg += std::to_string(b_shape[i]);
-                    if (i != b_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += ")";
-                LOG_ERROR(error_msg);
-            }
-        }
+        a_shape_expand.resize(b_dim - a_dim, 1);
+        a_shape_expand.insert(a_shape_expand.end(), a_shape.begin(),
+                              a_shape.end());
+        a_strides_expand.resize(b_dim - a_dim, 0);
+        a_strides_expand.insert(a_strides_expand.end(), a_strides.begin(),
+                                a_strides.end());
+    }
+    else if (a_dim > b_dim)
+    {
+        a_shape_expand = a_shape;
 
-        std::vector<uint64_t> result_shape(b_shape);
-        result_shape[b_dim - 1] = a_shape.back();
+        b_shape_expand.resize(a_dim - b_dim, 1);
+        b_shape_expand.insert(b_shape_expand.end(), b_shape.begin(),
+                              b_shape.end());
 
-        Tensor result(result_shape, device, a.dtype());
-        if (device.type == Device::DeviceType::HOST)
-            cpu::matmul_kernel(result, a, b);
-        else
-            gpu::matmul_kernel(result, a, b);
+        b_strides_expand.resize(b_dim - a_dim, 0);
+        b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
+                                b_strides.end());
+    }
 
-        return result;
+    Tensor a_expand(a, a_shape_expand, a_strides_expand, 0, a.dtype());
+    Tensor b_expand(b, b_shape_expand, b_strides_expand, 0, b.dtype());
+
+    const std::vector<uint64_t> result_shape =
+        Matmul::calculate_matmul_size(a_shape_expand, b_shape_expand);
+    Tensor result(result_shape, device, a.dtype());
+
+    if (device.type == Device::DeviceType::HOST)
+        cpu::matmul_kernel(result, a, b);
+    else
+        gpu::matmul_kernel(result, a, b);
+
+    return result;
+}
+
+std::vector<uint64_t> Matmul::calculate_matmul_size(
+    const std::vector<uint64_t>& a, const std::vector<uint64_t>& b)
+{
+    const auto& a_dim = a.size();
+    const auto& b_dim = b.size();
+
+    ASSERT_MESSAGE(
+        a_dim == b_dim,
+        "The two input tensors must be ranked the same, (a: {}, b: {})", a_dim,
+        b_dim);
+
+    bool can_matmul = true;
+
+    if (a_dim == 1 && b_dim == 1)
+    {
+        return {1};
     }
     else
     {
-        for (int i = 0; i < a_dim - 2; ++i)
+        if (a[a.size() - 1] == b[b.size() - 2])
         {
-            if (b_shape[i] == a_shape[i] || expand_a_dim[i] == 1)
+            for (int i = 0; i < a_dim - 2; ++i)
             {
-                std::string error_msg =
-                    "Tensor a and Tensor b shapess cannot be multiplied (";
-                for (int i = 0; i < b_dim; ++i)
+                if (a[i] == b[i])
                 {
-                    error_msg += std::to_string(b_shape[i]);
-                    if (i != b_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += " and ";
-                for (int i = 0; i < b_dim; ++i)
-                {
-                    error_msg += std::to_string(b_shape[i]);
-                    if (i != b_dim - 1)
-                        error_msg += " x ";
-                }
-                error_msg += ")";
-                LOG_ERROR(error_msg);
+                    can_matmul = false;
+                    break;
+                };
             }
         }
     }
+    if (!can_matmul) [[unlikely]]
+    {
+        std::string error_msg =
+            "Tensor a and Tensor b shapes cannot be multiplied (";
+        for (int i = 0; i < a_dim; ++i)
+        {
+            error_msg += std::to_string(a[i]);
+            if (i != a_dim - 1)
+                error_msg += " x ";
+        }
+        for (int i = 0; i < b_dim; ++i)
+        {
+            error_msg += std::to_string(b[i]);
+            if (i != b_dim - 1)
+                error_msg += " x ";
+        }
+        error_msg += ")";
+        LOG_ERROR(error_msg);
+        assert(0);
+    }
+
+    std::vector<uint64_t> result(a);
+    result[result.size() - 1] = b.back();
+
+    return result;
 }
+
 } // namespace ushionn::function

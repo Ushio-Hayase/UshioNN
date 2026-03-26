@@ -24,19 +24,19 @@ classDiagram
             +void* ptr
         }
         class IAllocator {
-            +allocate(size_t size) void**
+            +allocate(uint64_t size) void**
             +deallocate(void* ptr) void*
         }
         class CPUAllocator {
-            +allocate(size_t size) void*
+            +allocate(uint64_t size) void*
             +deallocate(void* ptr) void
         }
         class CUDAAllocator {
-            +allocate(size_t size) void *
+            +allocate(uint64_t size) void *
             +deallocate(void* ptr) void*
         }
         class AllocatorAdapter {
-            +allocate(size_t size) void*
+            +allocate(uint64_t size) void*
             +deallocate() void
             -IAllocator* allocator_
         }
@@ -48,17 +48,19 @@ classDiagram
         class StorageImpl {
             -unique_ptr~Storage~ data_
             -BaseAllocator~T~ allocator_
-            -size_t total_bytes
+            -uint64_t total_bytes
         }
 
         class Tensor {
             +Tensor()
-            +Tensor~T~(const vector~size_t~ & shape, const T* ptr, Device location)
-            +Tensor(vector~size_t~ shape, DType type, Device location)
-            +transpose(size_t dim1, size_t dim2) Tensor
-            +permute(const vector~size_t~ & order) Tensor
-            +view(const vector~size_t~ & shape) Tensor
-            +reshape(const vector~size_t~ & shape) Tensor
+            +Tensor~T~(const vector~uint64_t~ & shape, const T* ptr, Device location)
+            +Tensor(vector~uint64_t~ shape, DType type, Device location)
+            +Tensor(shared_ptr~TensorImpl~)
+            +Tensor(const Tensor& origin, vector~uint64_t~ shape, vector~uint64_t~ strides, uint64_t offset, DType type)
+            +transpose(uint64_t dim1, uint64_t dim2) Tensor
+            +permute(const vector~uint64_t~ & order) Tensor
+            +view(const vector~uint64_t~ & shape) Tensor
+            +reshape(const vector~uint64_t~ & shape) Tensor
             +clone() Tensor
             +contiguous() const
             +to(Device location) Tensor
@@ -67,49 +69,42 @@ classDiagram
             +cuda() Tensor
             +operator+=(const Tensor& other) Tensor&
             +operator*=(const float scalar) Tensor&
-            +shape() const vector~size_t~
-            +strides() const vector~size_t~
-            +dim() size_t
-            +numel() size_t
+            +shape() const vector~uint64_t~
+            +strides() const vector~uint64_t~
+            +dim() uint64_t
+            +numel() uint64_t
             +dtype() DType
             +device() Device
             +is_contiguous() bool
+            +get_elem_size() uint64_t
+            +data() void*
             +data_ptr~T~() T*
+            -clone_cpu() Tensor
+            -clone_gpu() Tensor
             -shared_ptr~TensorImpl~ impl_
         }
         class TensorImpl {
-            +TensorImpl(vector~size_t~ shape, DType type, Device location)
-            +TensorImpl(shared_ptr~Storage~ storage, vector~size_t~ shape, vector~size_t~ strides, size_t offset, DType type)
-            +shape() const vector~size_t~ &
-            +strides() const vector~size_t~ &
-            +dim() size_t
-            +numel() size_t
-            +storage_offset() size_t
+            +TensorImpl(vector~uint64_t~ shape, DType type, Device location)
+            +TensorImpl(shared_ptr~StorageImpl~ storage, vector~uint64_t~ shape, vector~uint64_t~ strides, uint64_t offset, DType type)
+            +shape() const vector~uint64_t~ &
+            +strides() const vector~uint64_t~ &
+            +dim() uint64_t
+            +numel() uint64_t
+            +storage_offset() uint64_t
             +dtype() DType
             +device() Device
+            +get_elem_size() uint64_t
             +is_contiguous() bool
             +data() void*
             +data_ptr~T~() T*
             +storage() shared_ptr~Storage~
-            -calculate_default_strides() vector~size_t~
-            -shape_ Shape
-            -strides_ Strides
-            -size_t total_elements_
-            -size_t storage_offset_
+            +calculate_default_strides() vector~uint64_t~$
+            -shape_ vector~uint64_t~
+            -strides_ vector~uint64_t~
+            -uint64_t total_elements_
+            -uint64_t storage_offset_
             -DType type_
             -shared_ptr~StorageImpl~ storage_
-        }
-        class Shape {
-            +reshape(const vector~size_t~ shape) void
-            +shape() const vector~size_t~ &
-            -vector~size_t~ shape_
-        }
-        class Strides {
-            +transpose(size_t dim1, size_t dim2) void
-            +view(const vector~size_t~ & shape) void
-            +broadcast(const Shape& other_shape) void
-            +strides() const vector~size_t~ &
-            -vector~size_t~ strides_
         }
     }
     namespace Operation {
@@ -119,6 +114,7 @@ classDiagram
         }
         class Matmul {
             +forward(const Tensor& a, const Tensor& b) Tensor$
+            +calculate_matmul_size(const vector~uint64_t~ & a, const vector~uint64_t~& b) vector~uint64_t~$
         }
         class ElememtwiseMul {
             +forward(const Tensor& a, const Tensor& b) Tensor$
@@ -208,7 +204,7 @@ classDiagram
             -stream_ cudaStream_t
         }
         class KernelConfigurator {
-            +static dim3 get_grid_size(size_t total_elements);
+            +static dim3 get_grid_size(uint64_t total_elements);
             +static dim3 get_block_size();
         }
         class CudaEvent {

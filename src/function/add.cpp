@@ -22,7 +22,7 @@ ushionn::Tensor ushionn::function::Add::forward(const Tensor& a,
 
     const Device& device = a.device();
 
-    Tensor result(a.shape(), a.dtype(), device);
+    Tensor result(a.shape(), device, a.dtype());
 
     if (device.type == Device::DeviceType::HOST)
     {

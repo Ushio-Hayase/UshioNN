@@ -26,7 +26,7 @@ Tensor function::ElementWiseMul::forward(const Tensor& a, const Tensor& b)
 
     const Device& device = a.device();
 
-    Tensor result(a.shape(), a.dtype(), device);
+    Tensor result(a.shape(), device, a.dtype());
 
     if (device.type == Device::DeviceType::HOST)
     {

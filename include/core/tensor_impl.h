@@ -31,14 +31,14 @@ class TensorImpl
 
     ~TensorImpl() = default;
 
-    [[nodiscard]] const std::vector<uint64_t>& shape() const;
-    [[nodiscard]] const std::vector<uint64_t>& strides() const;
-    [[nodiscard]] uint64_t dim() const;
-    [[nodiscard]] uint64_t numel() const;
-    [[nodiscard]] uint64_t storage_offset() const;
-    [[nodiscard]] DType dtype() const;
-    [[nodiscard]] Device device() const;
-    [[nodiscard]] uint64_t get_elem_size() const;
+    [[nodiscard]] const std::vector<uint64_t>& shape() const noexcept;
+    [[nodiscard]] const std::vector<uint64_t>& strides() const noexcept;
+    [[nodiscard]] uint64_t dim() const noexcept;
+    [[nodiscard]] uint64_t numel() const noexcept;
+    [[nodiscard]] uint64_t storage_offset() const noexcept;
+    [[nodiscard]] DType dtype() const noexcept;
+    [[nodiscard]] Device device() const noexcept;
+    [[nodiscard]] uint64_t get_elem_size() const noexcept;
 
     [[nodiscard]] bool is_contiguous() const;
 
