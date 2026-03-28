@@ -19,8 +19,12 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     const uint32_t a_dim = a_contiguous.dim();
     const uint32_t b_dim = b_contiguous.dim();
 
-    if (a_dim == 1 && b_dim == 1)
+    const auto& shape = result_contiguous.shape();
+
+    switch (type)
     {
+    case DType::FP64: {
+    }
     }
 }
 } // namespace ushionn::cpu
