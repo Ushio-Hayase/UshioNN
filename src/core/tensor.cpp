@@ -236,17 +236,25 @@ Tensor& Tensor::operator*=(const float scalar)
     return *this;
 }
 
-const std::vector<uint64_t>& Tensor::shape() const { return impl_->shape(); }
-const std::vector<uint64_t>& Tensor::strides() const
+const std::vector<uint64_t>& Tensor::shape() const noexcept
+{
+    return impl_->shape();
+}
+const std::vector<uint64_t>& Tensor::strides() const noexcept
 {
     return impl_->strides();
 }
-uint64_t Tensor::dim() const { return impl_->dim(); }
-uint64_t Tensor::numel() const { return impl_->numel(); }
-DType Tensor::dtype() const { return impl_->dtype(); }
-Device Tensor::device() const { return impl_->device(); }
-bool Tensor::is_contiguous() const { return impl_->is_contiguous(); }
-uint64_t Tensor::get_elem_size() const { return impl_->get_elem_size(); }
+uint64_t Tensor::dim() const noexcept { return impl_->dim(); }
+uint64_t Tensor::numel() const noexcept { return impl_->numel(); }
+DType Tensor::dtype() const noexcept { return impl_->dtype(); }
+Device Tensor::device() const noexcept { return impl_->device(); }
+bool Tensor::is_contiguous() const noexcept { return impl_->is_contiguous(); }
+uint64_t Tensor::get_elem_size() const noexcept
+{
+    return impl_->get_elem_size();
+}
+
+void Tensor::zero() noexcept { impl_->zero(); }
 
 void* Tensor::data() const { return impl_->storage()->data(); }
 

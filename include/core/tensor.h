@@ -69,6 +69,7 @@ class Tensor
     [[nodiscard]] Device device() const noexcept;
     [[nodiscard]] bool is_contiguous() const noexcept;
     [[nodiscard]] uint64_t get_elem_size() const noexcept;
+    void zero() noexcept;
 
     void* data() const;
 

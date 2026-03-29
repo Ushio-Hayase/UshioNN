@@ -39,12 +39,12 @@ class TensorImpl
     [[nodiscard]] DType dtype() const noexcept;
     [[nodiscard]] Device device() const noexcept;
     [[nodiscard]] uint64_t get_elem_size() const noexcept;
-
     [[nodiscard]] bool is_contiguous() const;
+    void zero() noexcept;
 
     template <ScalarType T> T* data_ptr() const
     {
-        return static_cast<T*>(storage_->data());
+        return static_cast<T*>(storage_->data()) + storage_offset_;
     }
 
     [[nodiscard]] std::shared_ptr<StorageImpl> storage() const;

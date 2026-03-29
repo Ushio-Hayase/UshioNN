@@ -31,14 +31,20 @@ TensorImpl::TensorImpl(std::shared_ptr<StorageImpl> storage,
         total_elements_ *= elem;
 }
 
-const std::vector<uint64_t>& TensorImpl::shape() const { return shape_; }
-const std::vector<uint64_t>& TensorImpl::strides() const { return strides_; }
-uint64_t TensorImpl::dim() const { return shape_.size(); }
-uint64_t TensorImpl::numel() const { return total_elements_; }
-uint64_t TensorImpl::storage_offset() const { return storage_offset_; }
-DType TensorImpl::dtype() const { return type_; }
-Device TensorImpl::device() const { return storage_->device(); }
-uint64_t TensorImpl::get_elem_size() const
+const std::vector<uint64_t>& TensorImpl::shape() const noexcept
+{
+    return shape_;
+}
+const std::vector<uint64_t>& TensorImpl::strides() const noexcept
+{
+    return strides_;
+}
+uint64_t TensorImpl::dim() const noexcept { return shape_.size(); }
+uint64_t TensorImpl::numel() const noexcept { return total_elements_; }
+uint64_t TensorImpl::storage_offset() const noexcept { return storage_offset_; }
+DType TensorImpl::dtype() const noexcept { return type_; }
+Device TensorImpl::device() const noexcept { return storage_->device(); }
+uint64_t TensorImpl::get_elem_size() const noexcept
 {
     switch (type_)
     {
@@ -58,6 +64,27 @@ uint64_t TensorImpl::get_elem_size() const
         return 1;
     default:
         return 0;
+    }
+}
+
+void TensorImpl::zero() noexcept
+{
+    switch (type_)
+    {
+    case DType::FP64:
+        std::memset(data_ptr<double>(), 0, storage_->nbytes());
+    case DType::FP32:
+        std::memset(data_ptr<float>(), 0, storage_->nbytes());
+    case DType::FP16:
+        std::memset(data_ptr<fp16_t>(), 0, storage_->nbytes());
+    case DType::BF16:
+        std::memset(data_ptr<bf16_t>(), 0, storage_->nbytes());
+    case DType::FP8_e4m3:
+        std::memset(data_ptr<fp8_e4m3_t>(), 0, storage_->nbytes());
+    case DType::FP8_e5m2:
+        std::memset(data_ptr<fp8_e5m2_t>(), 0, storage_->nbytes());
+    case DType::FP4:
+        std::memset(data_ptr<fp4_t>(), 0, storage_->nbytes());
     }
 }
 
