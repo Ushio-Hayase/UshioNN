@@ -46,17 +46,19 @@ namespace ushionn::utils
         {                                                                      \
             LOG_ERROR("Assertion Failed: {}", #condition);                     \
             DEBUG_BREAK();                                                     \
+            assert(!(condition));                                              \
         }                                                                      \
     } while (false)
 
 #define ASSERT_EQ(val1, val2)                                                  \
     do                                                                         \
     {                                                                          \
-        if (!((val1) == (val2)))                                               \
+        if (((val1) != (val2)))                                                \
         {                                                                      \
             LOG_ERROR("Assertion Failed: {} == {}. val1: {}, val2: {}", #val1, \
                       #val2, (val1), (val2));                                  \
             DEBUG_BREAK();                                                     \
+            assert((val1) != (val2));                                          \
         }                                                                      \
     } while (false)
 
@@ -68,6 +70,7 @@ namespace ushionn::utils
             LOG_ERROR("Assertion Failed : {} != {}. val1: {}, val2: {}",       \
                       #val1, #val2, (val1), (val2));                           \
             DEBUG_BREAK();                                                     \
+            assert(!((val1) == (val2)));                                       \
         }                                                                      \
     } while (false)
 
@@ -78,6 +81,7 @@ namespace ushionn::utils
         {                                                                      \
             LOG_ERROR(message, ##__VA_ARGS__);                                 \
             DEBUG_BREAK();                                                     \
+            assert(!(condition));                                              \
         }                                                                      \
     } while (false);
 
