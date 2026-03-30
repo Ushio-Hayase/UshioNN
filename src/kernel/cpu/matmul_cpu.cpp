@@ -16,6 +16,7 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     const DType type = result.dtype();
     const uint32_t a_dim = a_contiguous.dim();
     const uint32_t b_dim = b_contiguous.dim();
+    const uint32_t result_dim = result.dim();
 
     const auto& a_shape = a_contiguous.shape();
     const auto& b_shape = b_contiguous.shape();
@@ -27,10 +28,11 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 
     const auto& a_strides = a_contiguous.strides();
     const auto& b_strides = b_contiguous.strides();
-    const auto* result_strides = result.strides();
+    const auto& result_strides = result.strides();
 
     result.zero();
 
+    // TODO : 현재 SISD를 SIMD로 구현 필요
     switch (type)
     {
     case DType::FP64: {
@@ -42,26 +44,66 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         uint64_t batch_offset = 0;
         uint64_t batch_strides = 1;
 
-        for (uint32_t batch = 0; batch < a_dim - 2; ++batch)
+        for (uint32_t batch = result_dim - 2; batch >= 0; --batch)
         {
             batch_strides *= result_shape[batch];
-            batch_offset += batch_strides;
-            for (uint64_t i = 0; i < i_size; ++i)
+            for (uint64_t b = 0; b < result_shape[batch]; ++b)
             {
-                for (uint64_t k = 0; k < k_size; ++k)
+                batch_offset += batch_strides;
+                for (uint64_t i = 0; i < i_size; ++i)
                 {
-                    const double r = a_data[batch_offset + (i * k_size + k)];
-                    for (uint64_t j = 0; j < j_size; ++j)
+                    for (uint64_t k = 0; k < k_size; ++k)
                     {
+                        const double r =
+                            a_data[batch_offset + (i * k_size + k)];
+                        for (uint64_t j = 0; j < j_size; ++j)
+                        {
 
-                        result_data[batch_offset + (i * j_size + j)] +=
-                            r + b_data[batch_offset + (k * i_size + j)];
+                            result_data[batch_offset + (i * j_size + j)] +=
+                                r + b_data[batch_offset + (k * i_size + j)];
+                        }
                     }
                 }
             }
         }
     }
+    case DType::FP32: {
+
+        float* result_data = result.data_ptr<float>();
+        float* a_data = a_contiguous.data_ptr<float>();
+        float* b_data = b_contiguous.data_ptr<float>();
+
+        uint64_t batch_offset = 0;
+        uint64_t batch_strides = 1;
+
+        for (uint32_t batch = result_dim - 2; batch >= 0; --batch)
+        {
+            batch_strides *= result_shape[batch];
+            for (uint64_t b = 0; b < result_shape[batch]; ++b)
+            {
+                batch_offset += batch_strides;
+                for (uint64_t i = 0; i < i_size; ++i)
+                {
+                    for (uint64_t k = 0; k < k_size; ++k)
+                    {
+                        const double r =
+                            a_data[batch_offset + (i * k_size + k)];
+                        for (uint64_t j = 0; j < j_size; ++j)
+                        {
+
+                            result_data[batch_offset + (i * j_size + j)] +=
+                                r + b_data[batch_offset + (k * i_size + j)];
+                        }
+                    }
+                }
+            }
+        }
+    }
+        // TODO: 텐서 행렬곱 FP4 ~ FP16 구현 필요
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 }
-}
+
 } // namespace ushionn::cpu

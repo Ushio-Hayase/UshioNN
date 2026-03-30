@@ -243,22 +243,10 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 
         break;
     }
-        // TODO: 텐서 원소별 합 FP4 ~ FP16 구현 필요
-    case DType::FP16: {
-        break;
-    }
-    case DType::BF16: {
-        break;
-    }
-    case DType::FP8_e5m2: {
-        break;
-    }
-    case DType::FP8_e4m3: {
-        break;
-    }
-    case DType::FP4: {
-        break;
-    }
+        // TODO: 텐서 원소별 곱 FP4 ~ FP16 구현 필요
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 }
 

@@ -12,7 +12,7 @@ namespace ushionn::gpu
 
 template <ScalarType T>
 static void __global__ scalar_mul(T* dst, const T* src, const float scalar,
-                                  const size_t total_elements)
+                                  const uint64_t total_elements)
 {
     const size_t idx = cuda::utils::get_global_idx();
     const size_t strides = blockDim.x * blockDim.y * blockDim.z * gridDim.x *

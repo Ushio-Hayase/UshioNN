@@ -14,7 +14,7 @@ namespace ushionn::gpu
 {
 template <ScalarType T>
 static __global__ void elementwise_mul(T* src, const T* a, const T* b,
-                                       const size_t total_elements)
+                                       const uint64_t total_elements)
 {
     const size_t idx = cuda::utils::get_global_idx();
     const size_t strides = cuda::utils::get_strides();

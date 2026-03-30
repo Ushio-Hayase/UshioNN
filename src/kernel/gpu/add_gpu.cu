@@ -9,7 +9,7 @@ namespace ushionn::gpu
 {
 template <ushionn::ScalarType T>
 static __global__ void add(T* src, const T* tensor1, const T* tensor2,
-                           const size_t total_elements)
+                           const uint64_t total_elements)
 {
 
     const size_t idx = cuda::utils::get_global_idx();

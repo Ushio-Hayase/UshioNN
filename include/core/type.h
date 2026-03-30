@@ -148,7 +148,7 @@ inline std::string dtype_to_string(DType type)
     case DType::FP4:
         return "FP4";
     default:
-        return "";
+        return "undefined";
     }
 }
 
