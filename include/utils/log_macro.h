@@ -46,7 +46,6 @@ namespace ushionn::utils
         {                                                                      \
             LOG_ERROR("Assertion Failed: {}", #condition);                     \
             DEBUG_BREAK();                                                     \
-            assert();                                                          \
         }                                                                      \
     } while (false)
 
@@ -58,7 +57,6 @@ namespace ushionn::utils
             LOG_ERROR("Assertion Failed: {} == {}. val1: {}, val2: {}", #val1, \
                       #val2, (val1), (val2));                                  \
             DEBUG_BREAK();                                                     \
-            assert();                                                          \
         }                                                                      \
     } while (false)
 
@@ -70,7 +68,6 @@ namespace ushionn::utils
             LOG_ERROR("Assertion Failed : {} != {}. val1: {}, val2: {}",       \
                       #val1, #val2, (val1), (val2));                           \
             DEBUG_BREAK();                                                     \
-            assert();                                                          \
         }                                                                      \
     } while (false)
 
@@ -81,7 +78,6 @@ namespace ushionn::utils
         {                                                                      \
             LOG_ERROR(message, ##__VA_ARGS__);                                 \
             DEBUG_BREAK();                                                     \
-            assert(condition && message);                                      \
         }                                                                      \
     } while (false);
 
