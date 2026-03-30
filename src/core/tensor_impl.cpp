@@ -15,11 +15,11 @@ TensorImpl::TensorImpl(std::vector<uint64_t> shape, DType type, Device device)
     for (const auto& elem : shape_)
         total_elements_ *= elem;
 
-    storage_ = std::make_shared<StorageImpl>(total_elements_ * get_elem_size(),
+    storage_ = std::make_shared<Storage>(total_elements_ * get_elem_size(),
                                              device);
 }
 
-TensorImpl::TensorImpl(std::shared_ptr<StorageImpl> storage,
+TensorImpl::TensorImpl(std::shared_ptr<Storage> storage,
                        std::vector<uint64_t> shape,
                        std::vector<uint64_t> strides, uint64_t offset,
                        DType type)
@@ -106,7 +106,7 @@ bool TensorImpl::is_contiguous() const
     return true;
 }
 
-std::shared_ptr<StorageImpl> TensorImpl::storage() const { return storage_; }
+std::shared_ptr<Storage> TensorImpl::storage() const { return storage_; }
 
 std::vector<uint64_t> TensorImpl::calculate_default_strides(
     const std::vector<uint64_t>& shape)

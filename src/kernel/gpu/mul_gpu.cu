@@ -83,6 +83,8 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, const float scalar)
         break;
     }
     }
+
+    cudaDeviceSynchronize();
 }
 
 } // namespace ushionn::gpu

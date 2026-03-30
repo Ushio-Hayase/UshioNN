@@ -40,8 +40,8 @@ void add_kernel(Tensor& result, const Tensor& tensor1, const Tensor& tensor2)
     ASSERT_MESSAGE(tensor1.device().type == tensor2.device().type,
                    "Both tensors must be in the same device.");
 
-    const size_t grid_size = (result.numel() * BLOCK_SIZE - 1) / BLOCK_SIZE;
-    const size_t total_elem = result.numel();
+    const uint64_t grid_size = (result.numel() * BLOCK_SIZE - 1) / BLOCK_SIZE;
+    const uint64_t total_elem = result.numel();
 
     switch (result.dtype())
     {
@@ -88,5 +88,7 @@ void add_kernel(Tensor& result, const Tensor& tensor1, const Tensor& tensor2)
         break;
     }
     }
+
+    cudaDeviceSynchronize();
 }
 } // namespace ushionn::gpu

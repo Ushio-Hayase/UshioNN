@@ -1,13 +1,13 @@
 //
 // Created by UshioHayase on 2026-03-16.
 //
-#include "core/storage_impl.h"
+#include "core/storage.h"
 
 #include <memory>
 
 namespace ushionn
 {
-void StorageImpl::copy(const StorageImpl& impl)
+void Storage::copy(const Storage& impl)
 {
     if (impl.device_.type == Device::DeviceType::HOST &&
         this->device_.type == Device::DeviceType::HOST)

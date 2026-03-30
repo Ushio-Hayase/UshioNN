@@ -90,6 +90,8 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         break;
     }
     }
+
+    cudaDeviceSynchronize();
 }
 
 } // namespace ushionn::gpu

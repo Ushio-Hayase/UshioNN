@@ -44,23 +44,23 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         uint64_t batch_offset = 0;
         uint64_t batch_strides = 1;
 
-        for (uint32_t batch = result_dim - 2; batch >= 0; --batch)
+        for (int batch = result_dim - 2; batch >= 0; --batch)
         {
             batch_strides *= result_shape[batch];
-            for (uint64_t b = 0; b < result_shape[batch]; ++b)
+            for (int64_t b = 0; b < result_shape[batch]; ++b)
             {
                 batch_offset += batch_strides;
-                for (uint64_t i = 0; i < i_size; ++i)
+                for (int64_t i = 0; i < i_size; ++i)
                 {
-                    for (uint64_t k = 0; k < k_size; ++k)
+                    for (int64_t k = 0; k < k_size; ++k)
                     {
                         const double r =
                             a_data[batch_offset + (i * k_size + k)];
-                        for (uint64_t j = 0; j < j_size; ++j)
+                        for (int64_t j = 0; j < j_size; ++j)
                         {
 
                             result_data[batch_offset + (i * j_size + j)] +=
-                                r + b_data[batch_offset + (k * i_size + j)];
+                                r * b_data[batch_offset + (k * i_size + j)];
                         }
                     }
                 }
@@ -76,23 +76,24 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         uint64_t batch_offset = 0;
         uint64_t batch_strides = 1;
 
-        for (uint32_t batch = result_dim - 2; batch >= 0; --batch)
+        for (int batch = result_dim - 2; batch >= 0; --batch)
         {
             batch_strides *= result_shape[batch];
             for (uint64_t b = 0; b < result_shape[batch]; ++b)
             {
                 batch_offset += batch_strides;
-                for (uint64_t i = 0; i < i_size; ++i)
+                for (int64_t i = 0; i < i_size; ++i)
                 {
-                    for (uint64_t k = 0; k < k_size; ++k)
+                    for (int64_t k = 0; k < k_size; ++k)
+
                     {
                         const double r =
                             a_data[batch_offset + (i * k_size + k)];
-                        for (uint64_t j = 0; j < j_size; ++j)
+                        for (int64_t j = 0; j < j_size; ++j)
                         {
 
                             result_data[batch_offset + (i * j_size + j)] +=
-                                r + b_data[batch_offset + (k * i_size + j)];
+                                r * b_data[batch_offset + (k * i_size + j)];
                         }
                     }
                 }
