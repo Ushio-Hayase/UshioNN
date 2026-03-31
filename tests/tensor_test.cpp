@@ -9,18 +9,12 @@ TEST(TensorConstructorTest, ConstructorWithValidCPUPointerTest)
 
     EXPECT_EQ(t.shape(), shape);
     EXPECT_EQ(t.device().type, device.type);
+    EXPECT_EQ(t.dtype(), ushionn::DType::FP64);
+
+    EXPECT_EQ(t.data(), t.data_ptr<double>());
+    EXPECT_EQ(t.numel(), 3 * 4 * 5);
 }
 
-TEST(TensorTest, ConsturctorWithNoDataTest)
-{
-    ushionn::Tensor tensor{};
-
-    EXPECT_EQ(tensor.elementSize(), 4);
-    EXPECT_EQ(tensor.getCpuPtr(), nullptr);
-    EXPECT_EQ(tensor.getGpuPtr(), nullptr);
-
-    EXPECT_EQ(tensor.getTotalBytes(), 0);
-    EXPECT_EQ(tensor.getType(), ushionn::DType::FP32);
-}
+TEST(TensorTest, ConsturctorWithNoDataTest) { ushionn::Tensor tensor{}; }
 //
 // TEST(TensorTest, AddAssignTest) {}

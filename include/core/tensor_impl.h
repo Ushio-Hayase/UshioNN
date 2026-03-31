@@ -25,9 +25,8 @@ class TensorImpl
     /// @param strides 생성될 텐서의 strides
     /// @param offset 생성될 텐서의 offset
     /// @param type 생성될 텐서의 타입
-    TensorImpl(std::shared_ptr<Storage> storage,
-               std::vector<uint64_t> shape, std::vector<uint64_t> strides,
-               uint64_t offset, DType type);
+    TensorImpl(std::shared_ptr<Storage> storage, std::vector<uint64_t> shape,
+               std::vector<uint64_t> strides, uint64_t offset, DType type);
 
     ~TensorImpl() = default;
 
@@ -56,7 +55,7 @@ class TensorImpl
     std::vector<uint64_t> shape_;
     std::vector<uint64_t> strides_;
     uint64_t total_elements_;
-    uint64_t storage_offset_;
+    uint64_t storage_offset_ = 0;
 
     DType type_;
     std::shared_ptr<Storage> storage_;

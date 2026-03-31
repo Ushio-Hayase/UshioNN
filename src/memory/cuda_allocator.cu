@@ -8,7 +8,7 @@
 
 namespace ushionn::memory
 {
-void* CUDAAllocator::allocate(size_t size)
+void* CUDAAllocator::allocate(uint64_t size)
 {
     void* ptr = nullptr;
     auto err = cudaMalloc(&ptr, size);

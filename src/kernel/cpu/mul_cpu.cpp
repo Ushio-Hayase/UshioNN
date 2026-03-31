@@ -6,9 +6,9 @@
 
 #include <thread>
 
-namespace ushionn
+namespace ushionn::cpu
 {
-void scalr_mul_kernel(Tensor& result, const Tensor& src, float scalar)
+void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar)
 {
     ASSERT_MESSAGE(result.device().type != Device::DeviceType::NONE,
                    "Tensor not assigned.");
@@ -244,4 +244,4 @@ void scalr_mul_kernel(Tensor& result, const Tensor& src, float scalar)
     }
     }
 }
-} // namespace ushionn
+} // namespace ushionn::cpu

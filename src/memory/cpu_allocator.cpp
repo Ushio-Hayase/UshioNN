@@ -11,7 +11,7 @@
 
 namespace ushionn::memory
 {
-void* CPUAllocator::allocate(size_t size)
+void* CPUAllocator::allocate(uint64_t size)
 {
     ASSERT_MESSAGE(size % MEMORY_ALIGNMENT == 0, "");
 #if defined(_WIN32)

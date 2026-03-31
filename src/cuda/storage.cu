@@ -12,7 +12,7 @@ void Storage::copy(const Storage& impl)
     if (impl.device_.type == Device::DeviceType::HOST &&
         this->device_.type == Device::DeviceType::HOST)
     {
-        std::copy_n(impl.data(), impl.nbytes(), this->data());
+        std::memcpy(this->data(), impl.data(), impl.nbytes());
     }
     else if (impl.device_.type == Device::DeviceType::DEVICE &&
              this->device_.type == Device::DeviceType::HOST)

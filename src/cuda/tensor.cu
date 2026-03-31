@@ -14,7 +14,7 @@ __global__ static void clone_kernel(
 )
 {
     // 1. 1D 스레드 인덱스 계산 (이 값이 연속된 메모리의 Flat Index가 됨)
-    int idx = ushionn::cuda::utils::get_global_idx();
+    uint64_t idx = ushionn::cuda::utils::get_global_idx();
 
     // 할당된 총 스레드 수가 총 요소 개수보다 많을 수 있으므로 경계 검사
     if (idx >= total_elements)
@@ -44,7 +44,7 @@ ushionn::Tensor ushionn::Tensor::clone_gpu() const
     const auto& _strides = strides();
     const auto& type = dtype();
 
-    Tensor result(_shape, type);
+    Tensor result(_shape, device(), type);
     int total_elements = result.numel();
     int ndim = shape().size();
     std::vector<size_t> dst_strides =

@@ -52,36 +52,9 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, const float scalar)
                                                      scalar, total_elem);
         break;
     }
-    case DType::FP16: {
-        scalar_mul<fp16_t><<<grid_size, BLOCK_SIZE>>>(result.data_ptr<fp16_t>(),
-                                                      src.data_ptr<fp16_t>(),
-                                                      scalar, total_elem);
-        break;
-    }
-    case DType::BF16: {
-        scalar_mul<bf16_t><<<grid_size, BLOCK_SIZE>>>(result.data_ptr<bf16_t>(),
-                                                      src.data_ptr<bf16_t>(),
-                                                      scalar, total_elem);
-        break;
-    }
-    case DType::FP8_e4m3: {
-        scalar_mul<fp8_e4m3_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e4m3_t>(), src.data_ptr<fp8_e4m3_t>(), scalar,
-            total_elem);
-        break;
-    }
-    case DType::FP8_e5m2: {
-        scalar_mul<fp8_e5m2_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e5m2_t>(), src.data_ptr<fp8_e5m2_t>(), scalar,
-            total_elem);
-        break;
-    }
-    case DType::FP4: {
-        scalar_mul<fp4_t><<<grid_size, BLOCK_SIZE>>>(result.data_ptr<fp4_t>(),
-                                                     src.data_ptr<fp4_t>(),
-                                                     scalar, total_elem);
-        break;
-    }
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 
     cudaDeviceSynchronize();

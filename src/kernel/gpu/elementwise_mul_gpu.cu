@@ -49,8 +49,9 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     switch (result.dtype())
     {
     case DType::FP64: {
-        elementwise_mul(result.data_ptr<double>(), a.data_ptr<double>(),
-                        b.data_ptr<double>(), total_elem);
+        elementwise_mul<<<grid_size, BLOCK_SIZE>>>(
+            result.data_ptr<double>(), a.data_ptr<double>(),
+            b.data_ptr<double>(), total_elem);
         break;
     }
     case DType::FP32: {
@@ -59,36 +60,9 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
             total_elem);
         break;
     }
-    case DType::FP16: {
-        elementwise_mul<fp16_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp16_t>(), a.data_ptr<fp16_t>(),
-            b.data_ptr<fp16_t>(), total_elem);
-        break;
-    }
-    case DType::BF16: {
-        elementwise_mul<bf16_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<bf16_t>(), a.data_ptr<bf16_t>(),
-            b.data_ptr<bf16_t>(), total_elem);
-        break;
-    }
-    case DType::FP8_e4m3: {
-        elementwise_mul<fp8_e4m3_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e4m3_t>(), a.data_ptr<fp8_e4m3_t>(),
-            b.data_ptr<fp8_e4m3_t>(), total_elem);
-        break;
-    }
-    case DType::FP8_e5m2: {
-        elementwise_mul<fp8_e5m2_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e5m2_t>(), a.data_ptr<fp8_e5m2_t>(),
-            b.data_ptr<fp8_e5m2_t>(), total_elem);
-        break;
-    }
-    case DType::FP4: {
-        elementwise_mul<fp4_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp4_t>(), a.data_ptr<fp4_t>(), b.data_ptr<fp4_t>(),
-            total_elem);
-        break;
-    }
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 
     cudaDeviceSynchronize();

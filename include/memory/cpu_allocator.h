@@ -11,7 +11,7 @@ namespace ushionn::memory
 class CPUAllocator final : public IAllocator
 {
   public:
-    void* allocate(size_t size) override;
-    void deallocate(void* ptr) override;
+    void* allocate(uint64_t size) override;
+    static void deallocate(void* ptr);
 };
 } // namespace ushionn::memory

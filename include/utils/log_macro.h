@@ -3,6 +3,8 @@
 //
 #pragma once
 
+#include <cassert>
+
 #include "utils/logger.hpp"
 
 namespace ushionn::utils

@@ -57,36 +57,9 @@ void add_kernel(Tensor& result, const Tensor& tensor1, const Tensor& tensor2)
             tensor2.data_ptr<float>(), total_elem);
         break;
     }
-    case DType::FP16: {
-        add<fp16_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp16_t>(), tensor1.data_ptr<fp16_t>(),
-            tensor2.data_ptr<fp16_t>(), total_elem);
-        break;
-    }
-    case DType::BF16: {
-        add<bf16_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<bf16_t>(), tensor1.data_ptr<bf16_t>(),
-            tensor2.data_ptr<bf16_t>(), total_elem);
-        break;
-    }
-    case DType::FP8_e4m3: {
-        add<fp8_e4m3_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e4m3_t>(), tensor1.data_ptr<fp8_e4m3_t>(),
-            tensor2.data_ptr<fp8_e4m3_t>(), total_elem);
-        break;
-    }
-    case DType::FP8_e5m2: {
-        add<fp8_e5m2_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp8_e5m2_t>(), tensor1.data_ptr<fp8_e5m2_t>(),
-            tensor2.data_ptr<fp8_e5m2_t>(), total_elem);
-        break;
-    }
-    case DType::FP4: {
-        add<fp4_t><<<grid_size, BLOCK_SIZE>>>(
-            result.data_ptr<fp4_t>(), tensor1.data_ptr<fp4_t>(),
-            tensor2.data_ptr<fp4_t>(), total_elem);
-        break;
-    }
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 
     cudaDeviceSynchronize();

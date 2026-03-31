@@ -38,8 +38,9 @@ class Storage
   private:
     void copy(const Storage& impl);
 
-    memory::AllocatorAdapter allocator_;
-    std::unique_ptr<void, memory::AllocatorAdapter> data_;
+    std::unique_ptr<memory::IAllocator> allocator_;
+
+    std::unique_ptr<void, void (*)(void*)> data_{nullptr, [](void*) {}};
 
     size_t total_bytes_;
     Device device_;
