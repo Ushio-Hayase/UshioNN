@@ -97,5 +97,6 @@ namespace ushionn::utils
 #define ASSERT(condition) (void(0))
 #define ASSERT_EQ(val1, val2) (void(0))
 #define ASSERT_NE(val1, val2) (void(0))
+#define ASSERT_MESSAGE(condition, message) (void(0))
 #endif
 } // namespace ushionn::utils

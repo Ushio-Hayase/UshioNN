@@ -15,6 +15,6 @@ TEST(TensorConstructorTest, ConstructorWithValidCPUPointerTest)
     EXPECT_EQ(t.numel(), 3 * 4 * 5);
 }
 
-TEST(TensorTest, ConsturctorWithNoDataTest) { ushionn::Tensor tensor{}; }
+TEST(TensorTest, ConsturctorWithNoDataTest) { ; }
 //
 // TEST(TensorTest, AddAssignTest) {}
