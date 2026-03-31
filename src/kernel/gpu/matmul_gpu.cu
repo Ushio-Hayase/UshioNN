@@ -43,6 +43,10 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 {
     dim3 blockDim(16, 16, 1);
 
+    const int M = a.shape()[a.dim() - 2];
+    const int N = b.shape()[b.dim() - 1];
+    const uint64_t batch_size = result.numel() / (M * N);
+
     // 2. 그리드 차원 (Grid Dimension) 설정
     // x축: N(열)을 커버하기 위한 블록 수
     // y축: M(행)을 커버하기 위한 블록 수
@@ -50,7 +54,17 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
                  (M + blockDim.y - 1) / blockDim.y, batch_size);
 
+    DType type = result.dtype();
 
+    switch (type)
+    {
+    case DType::FP64: {
+        double* a_data = a.data_ptr<double>();
+        double* b_data = b.data_ptr<double>();
+        double* result_data = result.data_ptr<double>();
+        matmul<double><<<gridDim, blockDim>>>(result_data, a_data, b_data, );
+    }
+    }
     matmul<><<<gridDim, blockDim>>>(d_A, d_B, d_C, batch_size, M, K, N);
 
     cudaError_t err = cudaGetLastError();
@@ -58,7 +72,7 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     {
         LOG_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
     }
-    
+
     cudaDeviceSynchronize();
 }
 } // namespace ushionn::gpu
