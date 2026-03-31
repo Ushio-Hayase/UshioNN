@@ -38,6 +38,10 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
 
     if (a_dim == 1 && b_dim == 1)
     {
+        a_shape_expand = {1, 1, 1};
+        b_shape_expand = {1, 1, 1};
+        a_strides_expand = {0, 0, 1};
+        b_strides_expand = {0, 0, 1};
     }
     else if (b_dim == 1)
     {
@@ -70,7 +74,7 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
     Tensor b_expand(b, b_shape_expand, b_strides_expand, 0, b.dtype());
 
     const std::vector<uint64_t> result_shape =
-        Matmul::calculate_matmul_size(a_shape_expand, b_shape_expand);
+        calculate_matmul_size(a_shape_expand, b_shape_expand);
     Tensor result(result_shape, device, a.dtype());
 
     if (device.type == Device::DeviceType::HOST)

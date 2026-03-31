@@ -1,9 +1,10 @@
 #include "core/tensor.h"
 
-#include "../../include/utils/simd.h"
 #include "kernel/cpu/add_cpu.h"
+#include "kernel/cpu/elementwise_mul_cpu.h"
 #include "kernel/cpu/mul_cpu.h"
 #include "kernel/gpu/add_gpu.h"
+#include "kernel/gpu/elementwise_mul_gpu.h"
 #include "kernel/gpu/mul_gpu.h"
 #include "utils/log_macro.h"
 
@@ -37,7 +38,10 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr,
     else if constexpr (std::is_same_v<T, fp4_t>)
         type = DType::FP4;
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
-    std::copy(ptr, ptr + numel(), data_ptr<T>());
+    if (location.type == Device::DeviceType::HOST)
+        std::copy(ptr, ptr + numel(), data_ptr<T>());
+    else if (location.type == Device::DeviceType::DEVICE)
+        cudaMemcpy(data_ptr<T>(), ptr, numel(), cudaMemcpyDeviceToDevice);
 }
 
 // 명시적 인스턴스화
@@ -234,6 +238,34 @@ Tensor& Tensor::operator*=(const float scalar)
         gpu::scalar_mul_kernel(*this, *this, scalar);
     }
     return *this;
+}
+
+Tensor operator+(const Tensor& lhs, const Tensor& rhs)
+{
+    Tensor result(lhs.shape(), lhs.device(), lhs.dtype());
+
+    if (lhs.device().type == Device::DeviceType::HOST)
+    {
+        cpu::add_kernel(result, lhs, rhs);
+    }
+    else if (lhs.device().type == Device::DeviceType::DEVICE)
+    {
+        gpu::add_kernel(result, lhs, rhs);
+    }
+
+    return result;
+}
+
+Tensor operator*(const Tensor& lhs, const Tensor& rhs)
+{
+    Tensor result(lhs.shape(), lhs.device(), lhs.dtype());
+
+    if (lhs.device().type == Device::DeviceType::HOST)
+        cpu::elementwise_mul_kernel(result, lhs, rhs);
+    else if (lhs.device().type == Device::DeviceType::DEVICE)
+        gpu::elementwise_mul_kernel(result, lhs, rhs);
+
+    return result;
 }
 
 const std::vector<uint64_t>& Tensor::shape() const noexcept
