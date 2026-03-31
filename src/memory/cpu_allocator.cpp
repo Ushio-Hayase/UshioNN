@@ -7,6 +7,8 @@
 #include "utils/constant.h"
 #include "utils/log_macro.h"
 
+#include <cassert>
+
 namespace ushionn::memory
 {
 void* CPUAllocator::allocate(size_t size)

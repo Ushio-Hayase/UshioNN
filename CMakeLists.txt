@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 project(ushionn LANGUAGES CXX)
 
-set(USHIONN_BUILD_TESTING OFF)
+set(USHIONN_BUILD_TESTING ON)
 
 set(CMAKE_CXX_STANDARD 20)
 

@@ -74,6 +74,9 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         matmul<float><<<grid_dim, block_dim>>>(result_data, a_data, b_data,
                                                batch_size, M, K, N);
     }
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
 
     cudaError_t err = cudaGetLastError();

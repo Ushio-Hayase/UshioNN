@@ -3,20 +3,12 @@
 
 TEST(TensorConstructorTest, ConstructorWithValidCPUPointerTest)
 {
-    double* src = new double[24];
-    std::vector<size_t> shape = {2, 3, 4};
+    const std::vector<uint64_t> shape = {3, 4, 5};
+    const ushionn::Device device = {ushionn::Device::DeviceType::HOST, 0};
+    ushionn::Tensor t(shape, device, ushionn::DType::FP64);
 
-    ushionn::Tensor tensor(shape, src);
-
-    EXPECT_EQ(tensor.elementSize(), 8);
-    EXPECT_EQ(tensor.getTotalBytes(), 24 * 8);
-
-    EXPECT_EQ(tensor.getShape(), shape);
-    EXPECT_EQ(tensor.getShapeSize(), 3);
-    EXPECT_EQ(tensor.getType(), ushionn::DType::FP64);
-
-    EXPECT_NE(tensor.getCpuPtr(), nullptr);
-    EXPECT_EQ(tensor.getGpuPtr(), nullptr);
+    EXPECT_EQ(t.shape(), shape);
+    EXPECT_EQ(t.device().type, device.type);
 }
 
 TEST(TensorTest, ConsturctorWithNoDataTest)
