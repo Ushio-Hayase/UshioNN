@@ -47,12 +47,12 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         for (int batch = result_dim - 2; batch >= 0; --batch)
         {
             batch_strides *= result_shape[batch];
-            for (int64_t b = 0; b < result_shape[batch]; ++b)
+            for (int b = 0; b < result_shape[batch]; ++b)
             {
                 batch_offset += batch_strides;
-                for (int64_t i = 0; i < i_size; ++i)
+                for (int i = 0; i < i_size; ++i)
                 {
-                    for (int64_t k = 0; k < k_size; ++k)
+                    for (int k = 0; k < k_size; ++k)
                     {
                         const double r =
                             a_data[batch_offset + (i * k_size + k)];

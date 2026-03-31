@@ -29,7 +29,7 @@ static void __global__ matmul(T* dst, const T* a, const T* b, int batch_size,
         T* dst_batch_ptr = dst + (batch_idx * M * N);
 
         // 내적
-        float sum = 0.0f;
+        T sum = 0;
         for (int k = 0; k < K; ++k)
         {
             sum += a_batch_ptr[row * K + k] * b_batch_ptr[k * N + col];
@@ -41,18 +41,19 @@ static void __global__ matmul(T* dst, const T* a, const T* b, int batch_size,
 
 void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 {
-    dim3 blockDim(16, 16, 1);
+    dim3 block_dim(16, 16, 1);
 
     const int M = a.shape()[a.dim() - 2];
     const int N = b.shape()[b.dim() - 1];
+    const int K = a.shape().back();
     const uint64_t batch_size = result.numel() / (M * N);
 
     // 2. 그리드 차원 (Grid Dimension) 설정
     // x축: N(열)을 커버하기 위한 블록 수
     // y축: M(행)을 커버하기 위한 블록 수
     // z축: 배치축
-    dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
-                 (M + blockDim.y - 1) / blockDim.y, batch_size);
+    dim3 grid_dim((N + block_dim.x - 1) / block_dim.x,
+                  (M + block_dim.y - 1) / block_dim.y, batch_size);
 
     DType type = result.dtype();
 
@@ -62,10 +63,18 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         double* a_data = a.data_ptr<double>();
         double* b_data = b.data_ptr<double>();
         double* result_data = result.data_ptr<double>();
-        matmul<double><<<gridDim, blockDim>>>(result_data, a_data, b_data, );
+        matmul<double><<<grid_dim, block_dim>>>(result_data, a_data, b_data,
+                                                batch_size, M, K, N);
+    }
+    case DType::FP32: {
+        float* a_data = a.data_ptr<float>();
+        float* b_data = b.data_ptr<float>();
+        float* result_data = result.data_ptr<float>();
+
+        matmul<float><<<grid_dim, block_dim>>>(result_data, a_data, b_data,
+                                               batch_size, M, K, N);
     }
     }
-    matmul<><<<gridDim, blockDim>>>(d_A, d_B, d_C, batch_size, M, K, N);
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
