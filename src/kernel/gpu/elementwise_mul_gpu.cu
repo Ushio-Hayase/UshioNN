@@ -43,7 +43,7 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     ASSERT_MESSAGE(a.device().type == b.device().type,
                    "Both tensors must be in the same device.");
 
-    const size_t grid_size = (result.numel() * BLOCK_SIZE - 1) / BLOCK_SIZE;
+    const size_t grid_size = (result.numel() + BLOCK_SIZE - 1) / BLOCK_SIZE;
     const size_t total_elem = result.numel();
 
     switch (result.dtype())

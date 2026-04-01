@@ -40,7 +40,7 @@ void add_kernel(Tensor& result, const Tensor& tensor1, const Tensor& tensor2)
     ASSERT_MESSAGE(tensor1.device().type == tensor2.device().type,
                    "Both tensors must be in the same device.");
 
-    const uint64_t grid_size = (result.numel() * BLOCK_SIZE - 1) / BLOCK_SIZE;
+    const uint64_t grid_size = (result.numel() + BLOCK_SIZE - 1) / BLOCK_SIZE;
     const uint64_t total_elem = result.numel();
 
     switch (result.dtype())

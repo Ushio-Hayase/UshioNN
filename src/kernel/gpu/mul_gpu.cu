@@ -35,7 +35,7 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, const float scalar)
     ASSERT_MESSAGE(result.device().type == src.device().type,
                    "Both tensors must be in the same device.");
 
-    const size_t grid_size = (result.numel() * BLOCK_SIZE - 1) / BLOCK_SIZE;
+    const size_t grid_size = (result.numel() + BLOCK_SIZE - 1) / BLOCK_SIZE;
     const size_t total_elem = result.numel();
 
     switch (result.dtype())
