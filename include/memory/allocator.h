@@ -14,6 +14,7 @@ namespace memory
 class IAllocator
 {
   public:
+    virtual ~IAllocator() = default;
     virtual void* allocate(uint64_t size) = 0;
 };
 
