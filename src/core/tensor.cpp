@@ -39,9 +39,10 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr,
         type = DType::FP4;
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
     if (location.type == Device::DeviceType::HOST)
-        std::copy(ptr, ptr + numel(), data_ptr<T>());
+        std::copy(ptr, ptr + numel() * get_elem_size(), data_ptr<T>());
     else if (location.type == Device::DeviceType::DEVICE)
-        cudaMemcpy(data_ptr<T>(), ptr, numel(), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(data_ptr<T>(), ptr, numel() * get_elem_size(),
+                   cudaMemcpyDeviceToDevice);
 }
 
 // 명시적 인스턴스화

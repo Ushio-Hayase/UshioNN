@@ -3,6 +3,7 @@
 //
 #include "core/storage.h"
 
+#include <cstring>
 #include <memory>
 
 namespace ushionn

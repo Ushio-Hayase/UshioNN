@@ -145,7 +145,7 @@ TEST(TensorOperationTest, DEVICEAddTest)
     cudaMemcpy(result_cpu_data, result_data, sizeof(double) * 120,
                cudaMemcpyDeviceToHost);
 
-    EXPECT_EQ(result_cpu_data[10], 2.0);
+    EXPECT_EQ(result_cpu_data[14], 2.0);
 
     delete[] result_cpu_data;
 }
@@ -174,7 +174,7 @@ TEST(TensorOperationTest, DEVICEElemwiseMulTest)
     cudaMemcpy(result_cpu_data, result_data, sizeof(double) * 120,
                cudaMemcpyDeviceToHost);
 
-    EXPECT_EQ(result_cpu_data[100], 1.0);
+    EXPECT_EQ(result_cpu_data[16], 1.0);
 
     delete[] result_cpu_data;
 }

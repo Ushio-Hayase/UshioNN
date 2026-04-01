@@ -15,8 +15,8 @@ TensorImpl::TensorImpl(std::vector<uint64_t> shape, DType type, Device device)
     for (const auto& elem : shape_)
         total_elements_ *= elem;
 
-    storage_ = std::make_shared<Storage>(total_elements_ * get_elem_size(),
-                                             device);
+    storage_ =
+        std::make_shared<Storage>(total_elements_ * get_elem_size(), device);
 }
 
 TensorImpl::TensorImpl(std::shared_ptr<Storage> storage,

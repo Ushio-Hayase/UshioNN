@@ -11,8 +11,7 @@ namespace ushionn::memory
 void* CUDAAllocator::allocate(uint64_t size)
 {
     void* ptr = nullptr;
-    auto err = cudaMalloc(&ptr, size);
-    if (err != cudaSuccess)
+    if (auto err = cudaMalloc(&ptr, size); err != cudaSuccess)
         LOG_ERROR("CUDA Kernel Launch Error: {}", cudaGetErrorString(err));
     return ptr;
 }

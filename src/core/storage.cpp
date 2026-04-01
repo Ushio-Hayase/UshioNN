@@ -56,7 +56,7 @@ Storage::Storage(const Storage& impl, size_t total_bytes, Device device)
     {
         allocator_ = std::make_unique<memory::CUDAAllocator>();
         data_ = std::unique_ptr<void, void (*)(void*)>{
-            allocator_->allocate(total_bytes),
+            allocator_->allocate(total_bytes_),
             &memory::CUDAAllocator::deallocate};
     }
 
