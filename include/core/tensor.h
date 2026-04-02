@@ -6,7 +6,6 @@
 
 #include "core/type.h"
 
-#include <atomic>
 #include <memory> // for std::unique_ptr
 #include <utility>
 #include <vector>
@@ -22,20 +21,18 @@ class Tensor
     /// @param shape 생성할 텐서 shape
     /// @param type 생성할 텐서 type
     /// @param device 생성할 device
-    Tensor(const std::vector<uint64_t> shape, Device device = {},
+    Tensor(const std::vector<uint64_t>& shape, Device device = {},
            DType type = DType::FP32);
 
     template <ScalarType T>
     Tensor(const std::vector<uint64_t>& shape, const T* ptr, Device device);
 
     Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
-    Tensor(const Tensor& origin, std::vector<uint64_t> shape,
-           std::vector<uint64_t> strides, uint64_t offset, DType type);
 
     ~Tensor() = default;
 
-    Tensor(const Tensor&) = default;
-    Tensor& operator=(const Tensor&) = default;
+    Tensor(const Tensor& other);
+    Tensor& operator=(const Tensor& other);
     Tensor(Tensor&&) = default;
     Tensor& operator=(Tensor&&) = default;
 

@@ -6,6 +6,7 @@
 
 #include "memory/cpu_allocator.h"
 #include "memory/cuda_allocator.h"
+#include "utils/constant.h"
 #include "utils/log_macro.h"
 
 #include <memory>
@@ -27,6 +28,15 @@ Storage::Storage(size_t total_bytes, Device device)
 
     if (device_.type == Device::DeviceType::HOST)
     {
+
+        if (total_bytes_ % MEMORY_ALIGNMENT != 0)
+        {
+            LOG_WARN(
+                "The amount of memory to allocate must be multiples of 64, "
+                "Forced to assign in multiples of 64.");
+            total_bytes_ +=
+                MEMORY_ALIGNMENT - (total_bytes_ % MEMORY_ALIGNMENT);
+        }
         allocator_ = std::make_unique<memory::CPUAllocator>();
         data_ = std::unique_ptr<void, void (*)(void*)>{
             allocator_->allocate(total_bytes_),
@@ -35,9 +45,8 @@ Storage::Storage(size_t total_bytes, Device device)
     else if (device_.type == Device::DeviceType::DEVICE)
     {
         allocator_ = std::make_unique<memory::CUDAAllocator>();
-        data_ = std::unique_ptr<void, void (*)(void*)>{
-            allocator_->allocate(total_bytes_),
-            &memory::CUDAAllocator::deallocate};
+        data_ = {allocator_->allocate(total_bytes_),
+                 &memory::CUDAAllocator::deallocate};
     }
 }
 
@@ -47,6 +56,14 @@ Storage::Storage(const Storage& impl, size_t total_bytes, Device device)
 
     if (device_.type == Device::DeviceType::HOST)
     {
+        if (total_bytes_ % MEMORY_ALIGNMENT != 0)
+        {
+            LOG_WARN(
+                "The amount of memory to allocate must be multiples of 64, "
+                "Forced to assign in multiples of 64.");
+            total_bytes_ +=
+                MEMORY_ALIGNMENT - (total_bytes_ % MEMORY_ALIGNMENT);
+        }
         allocator_ = std::make_unique<memory::CPUAllocator>();
         data_ = std::unique_ptr<void, void (*)(void*)>(
             allocator_->allocate(total_bytes_),

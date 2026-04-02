@@ -21,7 +21,6 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar)
     ASSERT_MESSAGE(result.shape() == src.shape(),
                    "Both tensors must have same shape");
 
-    Tensor _result = result.is_contiguous() ? result : result.contiguous();
     Tensor _src = src.is_contiguous() ? src : src.contiguous();
 
     uint32_t number_of_thread = std::thread::hardware_concurrency();
@@ -35,8 +34,8 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar)
     {
     case DType::FP64: {
         double* src_data = _src.data_ptr<double>();
-        double* result_data = _result.data_ptr<double>();
-        size_t total_elements = _result.numel();
+        double* result_data = result.data_ptr<double>();
+        size_t total_elements = result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4
@@ -137,8 +136,8 @@ void scalar_mul_kernel(Tensor& result, const Tensor& src, float scalar)
     }
     case DType::FP32: {
         float* src_data = _src.data_ptr<float>();
-        float* result_data = _result.data_ptr<float>();
-        size_t total_elements = _result.numel();
+        float* result_data = result.data_ptr<float>();
+        size_t total_elements = result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4

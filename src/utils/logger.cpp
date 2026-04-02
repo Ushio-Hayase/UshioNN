@@ -8,11 +8,7 @@
 #include <ctime>
 #include <filesystem>
 #include <format>
-
-#if !defined(_WIN32)
-#include <fcntl.h>
-#include <sys/stat.h>
-#endif
+#include <iostream>
 
 namespace ushionn
 {
@@ -27,34 +23,16 @@ Logger::Logger() : min_level_(LogLevel::Info)
 
     if (!std::filesystem::exists("./logs"))
     {
-#if defined(_WIN32)
-        CreateDirectoryW(L"./logs", nullptr);
-#else
-        mkdir("logs", 0777);
-#endif
+        std::filesystem::create_directory("./logs");
     }
 
-    const std::wstring file_name =
-        std::format(L"./logs/Log_{:%Y-%m-%d_%H-%M-%S}.log", local_time);
+    const std::string file_name =
+        std::format("./logs/Log_{:%Y-%m-%d_%H-%M-%S}.log", local_time);
 
-#if defined(_WIN32)
-    file_handle_ = CreateFileW(file_name.c_str(), GENERIC_READ | GENERIC_WRITE,
-                               FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-                               CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
-#else
-    open(reinterpret_cast<const char*>(file_name.c_str()), O_CREAT | O_TRUNC,
-         0644);
-#endif
+    file_handle_ = std::ofstream(file_name, std::ios::out | std::ios::app);
 }
 
-Logger::~Logger()
-{
-#if defined(_WIN32)
-    CloseHandle(file_handle_);
-#else
-    close(file_handle_);
-#endif
-}
+Logger::~Logger() { file_handle_.close(); }
 
 Logger& Logger::getInstance()
 {
@@ -109,19 +87,15 @@ std::string Logger::buildLogEntry(LogLevel lvl, const char* file, int line,
     return ss.str();
 }
 
-void Logger::outputToChannels(const std::string& log) const
+void Logger::outputToChannels(const std::string& log)
 {
     constexpr char NEXT_LINE = '\n';
-    const std::string msg = log + NEXT_LINE;
+    std::string msg = log + NEXT_LINE;
 
-    if (file_handle_)
+    if (file_handle_.is_open())
     {
-#if defined(_WIN32)
-        WriteFile(file_handle_, msg.c_str(), msg.size(), nullptr, nullptr);
-#else
-        ::write(file_handle_, msg.c_str(), msg.size());
-#endif
+        file_handle_ << msg;
     }
 }
 } // namespace utils
-} // namespace nunet
+} // namespace ushionn

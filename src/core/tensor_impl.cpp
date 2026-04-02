@@ -7,7 +7,8 @@
 #include <utility>
 namespace ushionn
 {
-TensorImpl::TensorImpl(std::vector<uint64_t> shape, DType type, Device device)
+TensorImpl::TensorImpl(const std::vector<uint64_t>& shape, DType type,
+                       Device device)
     : shape_(shape), type_(type), total_elements_(1)
 {
     strides_ = calculate_default_strides(shape_);

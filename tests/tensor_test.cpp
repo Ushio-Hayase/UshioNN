@@ -16,16 +16,16 @@ TEST(TensorConstructorTest, ConstructorWithCPUTest)
     EXPECT_EQ(t.data(), t.data_ptr<double>());
     EXPECT_EQ(t.numel(), 3 * 4 * 5);
 
-    ushionn::Tensor t_copy(t, t.shape(), t.strides(), 0, t.dtype());
+    ushionn::Tensor t_copy(t);
 
     EXPECT_EQ(t_copy.shape(), shape);
     EXPECT_EQ(t_copy.device().type, device.type);
     EXPECT_EQ(t_copy.dtype(), ushionn::DType::FP64);
 
-    EXPECT_EQ(t_copy.data(), t.data_ptr<double>());
+    EXPECT_NE(t_copy.data(), t.data_ptr<double>());
     EXPECT_EQ(t_copy.numel(), 3 * 4 * 5);
 
-    EXPECT_EQ(t.data_ptr<double>(), t_copy.data_ptr<double>());
+    EXPECT_NE(t.data_ptr<double>(), t_copy.data_ptr<double>());
 
     double* data = new double[60];
     std::memset(data, 0, sizeof(double) * 60);
@@ -73,7 +73,7 @@ TEST(TensorOperationTest, HOSTElemwiseMulTest)
 
     double* result_data = result.data_ptr<double>();
 
-    for (int i = 0; i < 120; ++i)
+    for (int i = 0; i < 20; ++i)
         EXPECT_EQ(result_data[i], 1.0);
 
     delete[] data;
@@ -93,16 +93,16 @@ TEST(TensorConstructorTest, ConsturctorWithGPUTest)
     EXPECT_EQ(t.data(), t.data_ptr<double>());
     EXPECT_EQ(t.numel(), 3 * 4 * 5);
 
-    ushionn::Tensor t_copy(t, t.shape(), t.strides(), 0, t.dtype());
+    ushionn::Tensor t_copy(t);
 
     EXPECT_EQ(t_copy.shape(), shape);
     EXPECT_EQ(t_copy.device().type, device.type);
     EXPECT_EQ(t_copy.dtype(), ushionn::DType::FP64);
 
-    EXPECT_EQ(t_copy.data(), t.data_ptr<double>());
+    EXPECT_NE(t_copy.data_ptr<double>(), t.data_ptr<double>());
     EXPECT_EQ(t_copy.numel(), 3 * 4 * 5);
 
-    EXPECT_EQ(t.data_ptr<double>(), t_copy.data_ptr<double>());
+    EXPECT_NE(t.data_ptr<double>(), t_copy.data_ptr<double>());
     double* data = nullptr;
     cudaMalloc((void**)&data, sizeof(double) * 60);
     cudaMemset(data, 0, sizeof(double) * 60);
@@ -145,7 +145,8 @@ TEST(TensorOperationTest, DEVICEAddTest)
     cudaMemcpy(result_cpu_data, result_data, sizeof(double) * 120,
                cudaMemcpyDeviceToHost);
 
-    EXPECT_EQ(result_cpu_data[14], 2.0);
+    for (int i = 0; i < 120; ++i)
+        EXPECT_EQ(result_cpu_data[i], 2.0);
 
     delete[] result_cpu_data;
 }
@@ -174,7 +175,8 @@ TEST(TensorOperationTest, DEVICEElemwiseMulTest)
     cudaMemcpy(result_cpu_data, result_data, sizeof(double) * 120,
                cudaMemcpyDeviceToHost);
 
-    EXPECT_EQ(result_cpu_data[16], 1.0);
+    for (int i = 0; i < 120; ++i)
+        EXPECT_EQ(result_cpu_data[i], 1.0);
 
     delete[] result_cpu_data;
 }

@@ -70,19 +70,95 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
                                 b_strides.end());
     }
 
-    Tensor a_expand(a, a_shape_expand, a_strides_expand, 0, a.dtype());
-    Tensor b_expand(b, b_shape_expand, b_strides_expand, 0, b.dtype());
+    Tensor a_expand(a);
+    a_expand = a_expand.reshape(a_shape_expand);
+    Tensor b_expand(b);
+    b_expand = b_expand.reshape(b_shape_expand);
 
     const std::vector<uint64_t> result_shape =
         calculate_matmul_size(a_shape_expand, b_shape_expand);
     Tensor result(result_shape, device, a.dtype());
 
     if (device.type == Device::DeviceType::HOST)
-        cpu::matmul_kernel(result, a, b);
+        cpu::matmul_kernel(result, a_expand, b_expand);
     else
-        gpu::matmul_kernel(result, a, b);
+        gpu::matmul_kernel(result, a_expand, b_expand);
 
     return result;
+}
+
+void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
+{
+    ASSERT_MESSAGE(a.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned.");
+    ASSERT_MESSAGE(b.device().type != Device::DeviceType::NONE,
+                   "Tensor not assigned.");
+    ASSERT_MESSAGE(a.dtype() == b.dtype(),
+                   "The two tensors are of different types.");
+    ASSERT_MESSAGE(a.shape() == b.shape(), "Two tensors have different sizes.");
+    ASSERT_MESSAGE(a.device().type == b.device().type,
+                   "Both tensors must be in the same device.");
+
+    const Device& device = a.device();
+    const uint32_t a_dim = a.dim();
+    const uint32_t b_dim = b.dim();
+
+    const auto& a_shape = a.shape();
+    const auto& b_shape = b.shape();
+    const auto& a_strides = a.strides();
+    const auto& b_strides = b.strides();
+
+    std::vector<uint64_t> a_shape_expand;
+    std::vector<uint64_t> b_shape_expand;
+    std::vector<uint64_t> a_strides_expand;
+    std::vector<uint64_t> b_strides_expand;
+
+    if (a_dim == 1 && b_dim == 1)
+    {
+        a_shape_expand = {1, 1, 1};
+        b_shape_expand = {1, 1, 1};
+        a_strides_expand = {0, 0, 1};
+        b_strides_expand = {0, 0, 1};
+    }
+    else if (b_dim == 1)
+    {
+    }
+    else if (a_dim < b_dim)
+    {
+        b_shape_expand = b_shape;
+
+        a_shape_expand.resize(b_dim - a_dim, 1);
+        a_shape_expand.insert(a_shape_expand.end(), a_shape.begin(),
+                              a_shape.end());
+        a_strides_expand.resize(b_dim - a_dim, 0);
+        a_strides_expand.insert(a_strides_expand.end(), a_strides.begin(),
+                                a_strides.end());
+    }
+    else if (a_dim > b_dim)
+    {
+        a_shape_expand = a_shape;
+
+        b_shape_expand.resize(a_dim - b_dim, 1);
+        b_shape_expand.insert(b_shape_expand.end(), b_shape.begin(),
+                              b_shape.end());
+
+        b_strides_expand.resize(b_dim - a_dim, 0);
+        b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
+                                b_strides.end());
+    }
+
+    Tensor a_expand(a);
+    a_expand = a_expand.reshape(a_shape_expand);
+    Tensor b_expand(b);
+    b_expand = b_expand.reshape(b_shape_expand);
+
+    const std::vector<uint64_t> result_shape =
+        calculate_matmul_size(a_shape_expand, b_shape_expand);
+
+    if (device.type == Device::DeviceType::HOST)
+        cpu::matmul_kernel(result, a_expand, b_expand);
+    else
+        gpu::matmul_kernel(result, a_expand, b_expand);
 }
 
 std::vector<uint64_t> Matmul::calculate_matmul_size(

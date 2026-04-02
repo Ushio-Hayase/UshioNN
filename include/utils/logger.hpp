@@ -3,13 +3,7 @@
 //
 #pragma once
 #include <cstdint>
-
-#if defined(_WIN32)
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
+#include <fstream>
 #include <ios>
 #include <sstream>
 #include <string>
@@ -28,11 +22,7 @@ enum class LogLevel
 class Logger
 {
   private:
-#if defined(_WIN32)
-    HANDLE file_handle_ = nullptr;
-#else
-    int file_handle_ = 0;
-#endif
+    std::ofstream file_handle_;
     LogLevel min_level_;
 
   public:
@@ -48,7 +38,7 @@ class Logger
 
     template <typename... Args>
     void write(LogLevel level, const char* file, int line, const char* function,
-               const std::string& format, Args... args) const;
+               const std::string& format, Args... args);
 
   private:
     Logger();
@@ -67,7 +57,7 @@ class Logger
                                      const std::string& format);
 
     // 각 채널에 출력하는 함수
-    void outputToChannels(const std::string& log) const;
+    void outputToChannels(const std::string& log);
 };
 
 void setLogLevel(LogLevel lvl);
@@ -104,7 +94,7 @@ std::string Logger::formatMessage(const std::string& format, Value&& first,
 template <typename... Args>
 void Logger::write(const LogLevel level, const char* file, int line,
                    const char* function, const std::string& format,
-                   Args... args) const
+                   Args... args)
 {
     if (level < min_level_)
         return;
@@ -115,4 +105,4 @@ void Logger::write(const LogLevel level, const char* file, int line,
     outputToChannels(final_log);
 }
 } // namespace utils
-} // namespace nunet
+} // namespace ushionn

@@ -32,7 +32,6 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     ASSERT_MESSAGE(a.device().type == b.device().type,
                    "Both tensors must be in the same device.");
 
-    Tensor _result = result.is_contiguous() ? result : result.contiguous();
     Tensor _a = a.is_contiguous() ? a : a.contiguous();
     Tensor _b = a.is_contiguous() ? b : b.contiguous();
 
@@ -41,13 +40,13 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     if (number_of_thread == 0)
         number_of_thread = 1;
 
-    switch (DType type = result.dtype())
+    switch (result.dtype())
     {
     case DType::FP64: {
         double* a_data = _a.data_ptr<double>();
         double* b_data = _b.data_ptr<double>();
-        double* result_data = _result.data_ptr<double>();
-        size_t total_elements = _result.numel();
+        double* result_data = result.data_ptr<double>();
+        size_t total_elements = result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4
@@ -146,8 +145,8 @@ void elementwise_mul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     case DType::FP32: {
         float* a_data = _a.data_ptr<float>();
         float* b_data = _b.data_ptr<float>();
-        float* result_data = _result.data_ptr<float>();
-        size_t total_elements = _result.numel();
+        float* result_data = result.data_ptr<float>();
+        size_t total_elements = result.numel();
 
         size_t align_step = 1;
 #if SIMD_LEVEL == 4

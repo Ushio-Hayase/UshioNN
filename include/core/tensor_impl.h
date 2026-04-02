@@ -17,7 +17,7 @@ class TensorImpl
     /// @param shape 생성될 텐서의 차원
     /// @param type 생성될 텐서의 타입
     /// @param location 생성될 텐서의 장치
-    TensorImpl(std::vector<uint64_t> shape, DType type, Device location);
+    TensorImpl(const std::vector<uint64_t>& shape, DType type, Device location);
 
     /// @brief 기존 Storage를 공유하는 텐서 생성
     /// @param storage 공유할 Storage 포인터

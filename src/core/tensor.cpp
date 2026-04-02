@@ -1,11 +1,9 @@
 #include "core/tensor.h"
 
-#include "kernel/cpu/add_cpu.h"
-#include "kernel/cpu/elementwise_mul_cpu.h"
-#include "kernel/cpu/mul_cpu.h"
-#include "kernel/gpu/add_gpu.h"
-#include "kernel/gpu/elementwise_mul_gpu.h"
-#include "kernel/gpu/mul_gpu.h"
+#include "function/add.h"
+#include "function/elementwise_mul.h"
+#include "function/matmul.h"
+#include "function/mul.h"
 #include "utils/log_macro.h"
 
 #include <cmath>
@@ -13,7 +11,7 @@
 namespace ushionn
 {
 
-Tensor::Tensor(const std::vector<uint64_t> shape, Device location, DType type)
+Tensor::Tensor(const std::vector<uint64_t>& shape, Device location, DType type)
 {
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
 }
@@ -39,7 +37,7 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr,
         type = DType::FP4;
     impl_ = std::make_shared<TensorImpl>(shape, type, location);
     if (location.type == Device::DeviceType::HOST)
-        std::copy(ptr, ptr + numel() * get_elem_size(), data_ptr<T>());
+        std::memcpy(data_ptr<T>(), ptr, numel() * get_elem_size());
     else if (location.type == Device::DeviceType::DEVICE)
         cudaMemcpy(data_ptr<T>(), ptr, numel() * get_elem_size(),
                    cudaMemcpyDeviceToDevice);
@@ -56,13 +54,8 @@ template Tensor::Tensor(const std::vector<uint64_t>&, const fp8_e5m2_t*,
                         Device);
 template Tensor::Tensor(const std::vector<uint64_t>&, const fp4_t*, Device);
 
-Tensor::Tensor(const Tensor& origin, std::vector<uint64_t> shape,
-               std::vector<uint64_t> strides, uint64_t offset, DType type)
-    : impl_(std::make_shared<TensorImpl>(origin.impl_->storage(),
-                                         std::move(shape), std::move(strides),
-                                         offset, type))
-{
-}
+Tensor::Tensor(const Tensor& other) { *this = other.clone(); }
+Tensor& Tensor::operator=(const Tensor& other) { return *this = other.clone(); }
 
 Tensor Tensor::transpose(uint64_t dim1, uint64_t dim2) const
 {
@@ -137,8 +130,7 @@ Tensor Tensor::view(const std::vector<uint64_t>& shape) const
     const std::vector<uint64_t> new_strides =
         TensorImpl::calculate_default_strides(shape);
 
-    return Tensor(*this, shape, new_strides, impl_->storage_offset(),
-                  impl_->dtype());
+    return Tensor(*this);
 }
 
 Tensor Tensor::reshape(const std::vector<uint64_t>& shape) const
@@ -214,14 +206,7 @@ Tensor& Tensor::operator+=(const Tensor& other)
     ASSERT_MESSAGE(this->shape() == other.shape(),
                    "Both tensors must have the same shape");
 
-    if (this->device().type == Device::DeviceType::HOST)
-    {
-        cpu::add_kernel(*this, *this, other);
-    }
-    else if (this->device().type == Device::DeviceType::DEVICE)
-    {
-        gpu::add_kernel(*this, *this, other);
-    }
+    function::Add::forward(*this, *this, other);
     return *this;
 }
 
@@ -230,45 +215,20 @@ Tensor& Tensor::operator*=(const float scalar)
     ASSERT_MESSAGE(this->device().type != Device::DeviceType::NONE,
                    "Tensor not assigned");
 
-    if (this->device().type == Device::DeviceType::HOST)
-    {
-        cpu::scalar_mul_kernel(*this, *this, scalar);
-    }
-    else if (this->device().type == Device::DeviceType::DEVICE)
-    {
-        gpu::scalar_mul_kernel(*this, *this, scalar);
-    }
+    function::Mul::forward(*this, *this, scalar);
+
     return *this;
 }
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs)
 {
-    Tensor result(lhs.shape(), lhs.device(), lhs.dtype());
-
-    if (lhs.device().type == Device::DeviceType::HOST)
-    {
-        cpu::add_kernel(result, lhs, rhs);
-    }
-    else if (lhs.device().type == Device::DeviceType::DEVICE)
-    {
-        gpu::add_kernel(result, lhs, rhs);
-    }
-
-    return result;
+    return function::Add::forward(lhs, rhs);
 }
 
 Tensor operator*(const Tensor& lhs, const Tensor& rhs)
 {
-    Tensor result(lhs.shape(), lhs.device(), lhs.dtype());
-
-    if (lhs.device().type == Device::DeviceType::HOST)
-        cpu::elementwise_mul_kernel(result, lhs, rhs);
-    else if (lhs.device().type == Device::DeviceType::DEVICE)
-        gpu::elementwise_mul_kernel(result, lhs, rhs);
-
-    return result;
+    return function::ElementWiseMul::forward(lhs, rhs);
 }
-
 const std::vector<uint64_t>& Tensor::shape() const noexcept
 {
     return impl_->shape();
