@@ -9,6 +9,7 @@ namespace ushionn
 {
 namespace function
 {
+
 class Matmul
 {
   public:
@@ -17,5 +18,10 @@ class Matmul
     static std::vector<uint64_t> calculate_matmul_size(
         const std::vector<uint64_t>& a, const std::vector<uint64_t>& b);
 };
+
+inline Tensor matmul(const Tensor& a, const Tensor& b)
+{
+    return Matmul::forward(a, b);
+}
 } // namespace function
 } // namespace ushionn

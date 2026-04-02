@@ -10,6 +10,7 @@
 
 namespace ushionn::function
 {
+
 Tensor Matmul::forward(const Tensor& a, const Tensor& b)
 {
     ASSERT_MESSAGE(a.device().type != Device::DeviceType::NONE,
@@ -45,6 +46,7 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
     }
     else if (b_dim == 1)
     {
+        b_shape_expand = {b_shape[0], 1};
     }
     else if (a_dim < b_dim)
     {
@@ -68,6 +70,11 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
         b_strides_expand.resize(b_dim - a_dim, 0);
         b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
                                 b_strides.end());
+    }
+    else
+    {
+        a_shape_expand = a_shape;
+        b_shape_expand = b_shape;
     }
 
     Tensor a_expand(a);
@@ -122,8 +129,9 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
     }
     else if (b_dim == 1)
     {
+        b_shape_expand = {b_shape[0], 1};
     }
-    else if (a_dim < b_dim)
+    if (a_dim < b_dim)
     {
         b_shape_expand = b_shape;
 
@@ -146,7 +154,11 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
         b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
                                 b_strides.end());
     }
-
+    else
+    {
+        a_shape_expand = a_shape;
+        b_shape_expand = b_shape;
+    }
     Tensor a_expand(a);
     a_expand = a_expand.reshape(a_shape_expand);
     Tensor b_expand(b);
@@ -184,7 +196,7 @@ std::vector<uint64_t> Matmul::calculate_matmul_size(
         {
             for (int i = 0; i < a_dim - 2; ++i)
             {
-                if (a[i] == b[i])
+                if (a[i] != b[i])
                 {
                     can_matmul = false;
                     break;
@@ -202,6 +214,7 @@ std::vector<uint64_t> Matmul::calculate_matmul_size(
             if (i != a_dim - 1)
                 error_msg += " x ";
         }
+        error_msg += " , ";
         for (int i = 0; i < b_dim; ++i)
         {
             error_msg += std::to_string(b[i]);

@@ -1,3 +1,6 @@
+#include "function/add.h"
+#include "function/matmul.h"
+
 #include <core/tensor.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime_api.h>
@@ -77,6 +80,35 @@ TEST(TensorOperationTest, HOSTElemwiseMulTest)
         EXPECT_EQ(result_data[i], 1.0);
 
     delete[] data;
+}
+
+TEST(TensorOperationTest, HOSTMatmulTest)
+{
+    const ushionn::Device device = {ushionn::Device::DeviceType::HOST, 0};
+
+    double* data_a = new double[4];
+    double* data_b = new double[4];
+    double* data_result = new double[4];
+
+    for (int i = 1; i <= 4; ++i)
+    {
+        data_a[i - 1] = i;
+        data_b[i - 1] = 4 + i;
+    }
+
+    data_result[0] = 19;
+    data_result[1] = 22;
+    data_result[2] = 43;
+    data_result[3] = 50;
+
+    ushionn::Tensor t1({1, 2, 2}, data_a, device);
+    ushionn::Tensor t2({1, 2, 2}, data_b, device);
+    ushionn::Tensor result = ushionn::function::matmul(t1, t2);
+
+    auto result_ptr = result.data_ptr<double>();
+
+    for (int i = 0; i < 4; ++i)
+        EXPECT_EQ(result_ptr[i], data_result[i]);
 }
 
 #if defined(USE_CUDA)
