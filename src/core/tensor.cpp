@@ -55,6 +55,14 @@ template Tensor::Tensor(const std::vector<uint64_t>&, const fp8_e5m2_t*,
 template Tensor::Tensor(const std::vector<uint64_t>&, const fp4_t*, Device);
 
 Tensor::Tensor(const Tensor& other) { *this = other.clone(); }
+
+Tensor::Tensor(const Tensor& other, const std::vector<uint64_t>& shape,
+               const std::vector<uint64_t>& strides, uint64_t offset)
+    : impl_(std::make_shared<TensorImpl>(other.impl_->storage(), shape, strides,
+                                         offset, other.dtype()))
+{
+}
+
 Tensor& Tensor::operator=(const Tensor& other) { return *this = other.clone(); }
 
 Tensor Tensor::transpose(uint64_t dim1, uint64_t dim2) const

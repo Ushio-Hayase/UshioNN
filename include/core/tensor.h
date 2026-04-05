@@ -29,6 +29,13 @@ class Tensor
 
     Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
 
+    /// @brief 기존의 텐서 데이터를 참조하는 새로운 텐서를 생성합니다.
+    /// @param other 참조할 텐서
+    /// @param shape 새로운 텐서 객체의 모양
+    /// @param strides 새로운 텐서 객체의 strides
+    Tensor(const Tensor& other, const std::vector<uint64_t>& shape,
+           const std::vector<uint64_t>& strides, uint64_t offset);
+
     ~Tensor() = default;
 
     Tensor(const Tensor& other);
