@@ -10,8 +10,8 @@ namespace ushionn::cpu
 {
 void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 {
-    Tensor a_contiguous = a.is_contiguous() ? a : a.contiguous();
-    Tensor b_contiguous = b.is_contiguous() ? b : b.contiguous();
+    const Tensor& a_contiguous = a.contiguous();
+    const Tensor& b_contiguous = b.contiguous();
 
     const DType type = result.dtype();
     const uint32_t a_dim = a_contiguous.dim();
@@ -22,7 +22,7 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     const auto& b_shape = b_contiguous.shape();
     const auto& result_shape = result.shape();
 
-    const uint64_t k_size = a_shape.back();
+    const uint64_t k_size = a_shape[a_dim - 1];
     const uint64_t i_size = a_shape[a_dim - 2];
     const uint64_t j_size = b_shape[b_dim - 1];
 
@@ -30,7 +30,11 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     const auto& b_strides = b_contiguous.strides();
     const auto& result_strides = result.strides();
 
-    result.zero();
+    uint64_t total_batch_size = 1;
+    for (int i = 0; i < result_dim - 2; ++i)
+    {
+        total_batch_size *= result_shape[i];
+    }
 
     // TODO : 현재 SISD를 SIMD로 구현 필요
     switch (type)
@@ -41,31 +45,30 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         double* a_data = a_contiguous.data_ptr<double>();
         double* b_data = b_contiguous.data_ptr<double>();
 
-        uint64_t batch_offset = 0;
-        uint64_t batch_strides = 1;
-
-        for (int batch = result_dim - 2; batch >= 0; --batch)
+        for (int64_t batch = 0; batch < total_batch_size; ++batch)
         {
-            batch_strides *= result_shape[batch];
-            for (int b = 0; b < result_shape[batch]; ++b)
+            for (int64_t i = 0; i < i_size; ++i)
             {
-                batch_offset += batch_strides;
-                for (int i = 0; i < i_size; ++i)
+                for (int64_t k = 0; k < k_size; ++k)
                 {
-                    for (int k = 0; k < k_size; ++k)
+                    const double r = a_data[batch * a_strides[a_dim - 3] +
+                                            i * a_strides[a_dim - 2] +
+                                            k * a_strides[a_dim - 1]];
+                    for (int64_t j = 0; j < j_size; ++j)
                     {
-                        const double r =
-                            a_data[batch_offset + (i * k_size + k)];
-                        for (int64_t j = 0; j < j_size; ++j)
-                        {
-
-                            result_data[batch_offset + (i * j_size + j)] +=
-                                r * b_data[batch_offset + (k * i_size + j)];
-                        }
+                        const uint64_t result_idx =
+                            batch * result_strides[result_dim - 3] +
+                            i * result_strides[result_dim - 2] +
+                            j * result_strides[result_dim - 1];
+                        const uint64_t b_idx = batch * b_strides[b_dim - 3] +
+                                               k * b_strides[b_dim - 2] +
+                                               j * b_strides[b_dim - 1];
+                        result_data[result_idx] += r * b_data[b_idx];
                     }
                 }
             }
         }
+        break;
     }
     case DType::FP32: {
 
@@ -73,32 +76,30 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
         float* a_data = a_contiguous.data_ptr<float>();
         float* b_data = b_contiguous.data_ptr<float>();
 
-        uint64_t batch_offset = 0;
-        uint64_t batch_strides = 1;
-
-        for (int batch = result_dim - 2; batch >= 0; --batch)
+        for (int64_t batch = 0; batch < total_batch_size; ++batch)
         {
-            batch_strides *= result_shape[batch];
-            for (uint64_t b = 0; b < result_shape[batch]; ++b)
+            for (int64_t i = 0; i < i_size; ++i)
             {
-                batch_offset += batch_strides;
-                for (int64_t i = 0; i < i_size; ++i)
+                for (int64_t k = 0; k < k_size; ++k)
                 {
-                    for (int64_t k = 0; k < k_size; ++k)
+                    const float r = a_data[batch * a_strides[a_dim - 3] +
 
+                                           (i * a_strides[a_dim - 2] +
+                                            k * a_strides[a_dim - 1])];
+                    for (int64_t j = 0; j < j_size; ++j)
                     {
-                        const double r =
-                            a_data[batch_offset + (i * k_size + k)];
-                        for (int64_t j = 0; j < j_size; ++j)
-                        {
 
-                            result_data[batch_offset + (i * j_size + j)] +=
-                                r * b_data[batch_offset + (k * i_size + j)];
-                        }
+                        result_data[batch * result_strides[result_dim - 3] +
+                                    (i * result_strides[result_dim - 2]) +
+                                    (j * result_strides[result_dim - 1])] +=
+                            r * b_data[batch * b_strides[b_dim - 3] +
+                                       (k * b_strides[b_dim - 2]) +
+                                       (j * b_strides[b_dim - 1])];
                     }
                 }
             }
         }
+        break;
     }
         // TODO: 텐서 행렬곱 FP4 ~ FP16 구현 필요
     default:

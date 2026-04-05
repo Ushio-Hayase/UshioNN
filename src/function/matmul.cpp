@@ -13,16 +13,6 @@ namespace ushionn::function
 
 Tensor Matmul::forward(const Tensor& a, const Tensor& b)
 {
-    ASSERT_MESSAGE(a.device().type != Device::DeviceType::NONE,
-                   "Tensor not assigned.");
-    ASSERT_MESSAGE(b.device().type != Device::DeviceType::NONE,
-                   "Tensor not assigned.");
-    ASSERT_MESSAGE(a.dtype() == b.dtype(),
-                   "The two tensors are of different types.");
-    ASSERT_MESSAGE(a.shape() == b.shape(), "Two tensors have different sizes.");
-    ASSERT_MESSAGE(a.device().type == b.device().type,
-                   "Both tensors must be in the same device.");
-
     const Device& device = a.device();
     const uint32_t a_dim = a.dim();
     const uint32_t b_dim = b.dim();
@@ -37,16 +27,51 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
     std::vector<uint64_t> a_strides_expand;
     std::vector<uint64_t> b_strides_expand;
 
+    // 텐서의 차원을 3차원 이상으로 맞춤
     if (a_dim == 1 && b_dim == 1)
     {
-        a_shape_expand = {1, 1, 1};
-        b_shape_expand = {1, 1, 1};
-        a_strides_expand = {0, 0, 1};
-        b_strides_expand = {0, 0, 1};
+        a_shape_expand = {1, 1, a_shape[0]};
+        b_shape_expand = {1, b_shape[0], 1};
+        a_strides_expand = {0, 0, a_strides[0]};
+        b_strides_expand = {0, b_strides[0], 0};
+    }
+    else if (a_dim == 1)
+    {
+        a_shape_expand = {1, 1, a_shape[0]};
+        a_strides_expand = {0, 0, a_strides[0]};
+        if (b_dim == 2)
+        {
+            b_shape_expand = {1, b_shape[0], b_shape[1]};
+            b_strides_expand = {0, b_strides[0], b_strides[1]};
+        }
+        else
+        {
+            b_shape_expand = b_shape;
+            b_strides_expand = b_strides;
+        }
     }
     else if (b_dim == 1)
     {
-        b_shape_expand = {b_shape[0], 1};
+        b_shape_expand = {1, b_shape[0], 1};
+        b_strides_expand = {0, b_strides[0], 0};
+        if (a_dim == 2)
+        {
+            a_shape_expand = {1, a_shape[0], a_shape[1]};
+            a_strides_expand = {0, a_strides[0], a_strides[1]};
+        }
+        else
+        {
+            a_shape_expand = a_shape;
+            a_strides_expand = a_strides;
+        }
+    }
+    else if (a_dim == 2 && b_dim == 2)
+    {
+        a_shape_expand = {1, a_shape[0], a_shape[1]};
+        a_strides_expand = {0, a_strides[0], a_strides[1]};
+
+        b_shape_expand = {1, b_shape[0], b_shape[1]};
+        b_strides_expand = {0, b_strides[0], b_strides[1]};
     }
     else if (a_dim < b_dim)
     {
@@ -67,7 +92,7 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
         b_shape_expand.insert(b_shape_expand.end(), b_shape.begin(),
                               b_shape.end());
 
-        b_strides_expand.resize(b_dim - a_dim, 0);
+        b_strides_expand.resize(a_dim - b_dim, 0);
         b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
                                 b_strides.end());
     }
@@ -75,16 +100,17 @@ Tensor Matmul::forward(const Tensor& a, const Tensor& b)
     {
         a_shape_expand = a_shape;
         b_shape_expand = b_shape;
+        a_strides_expand = a_strides;
+        b_strides_expand = b_strides;
     }
-
-    Tensor a_expand(a);
-    a_expand = a_expand.reshape(a_shape_expand);
-    Tensor b_expand(b);
-    b_expand = b_expand.reshape(b_shape_expand);
+    Tensor a_expand(a, a_shape_expand, a_strides_expand, 0);
+    Tensor b_expand(b, b_shape_expand, b_strides_expand, 0);
 
     const std::vector<uint64_t> result_shape =
         calculate_matmul_size(a_shape_expand, b_shape_expand);
     Tensor result(result_shape, device, a.dtype());
+
+    result.zero();
 
     if (device.type == Device::DeviceType::HOST)
         cpu::matmul_kernel(result, a_expand, b_expand);
@@ -102,7 +128,6 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
                    "Tensor not assigned.");
     ASSERT_MESSAGE(a.dtype() == b.dtype(),
                    "The two tensors are of different types.");
-    ASSERT_MESSAGE(a.shape() == b.shape(), "Two tensors have different sizes.");
     ASSERT_MESSAGE(a.device().type == b.device().type,
                    "Both tensors must be in the same device.");
 
@@ -119,19 +144,53 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
     std::vector<uint64_t> b_shape_expand;
     std::vector<uint64_t> a_strides_expand;
     std::vector<uint64_t> b_strides_expand;
-
+    // 텐서의 차원을 3차원 이상으로 맞춤
     if (a_dim == 1 && b_dim == 1)
     {
-        a_shape_expand = {1, 1, 1};
-        b_shape_expand = {1, 1, 1};
-        a_strides_expand = {0, 0, 1};
-        b_strides_expand = {0, 0, 1};
+        a_shape_expand = {1, 1, a_shape[0]};
+        b_shape_expand = {1, b_shape[0], 1};
+        a_strides_expand = {0, 0, a_strides[0]};
+        b_strides_expand = {0, b_strides[0], 0};
+    }
+    else if (a_dim == 1)
+    {
+        a_shape_expand = {1, 1, a_shape[0]};
+        a_strides_expand = {0, 0, a_strides[0]};
+        if (b_dim == 2)
+        {
+            b_shape_expand = {1, b_shape[0], b_shape[1]};
+            b_strides_expand = {0, b_strides[0], b_strides[1]};
+        }
+        else
+        {
+            b_shape_expand = b_shape;
+            b_strides_expand = b_strides;
+        }
     }
     else if (b_dim == 1)
     {
-        b_shape_expand = {b_shape[0], 1};
+        b_shape_expand = {1, b_shape[0], 1};
+        b_strides_expand = {0, b_strides[0], 0};
+        if (a_dim == 2)
+        {
+            a_shape_expand = {1, a_shape[0], a_shape[1]};
+            a_strides_expand = {0, a_strides[0], a_strides[1]};
+        }
+        else
+        {
+            a_shape_expand = a_shape;
+            a_strides_expand = a_strides;
+        }
     }
-    if (a_dim < b_dim)
+    else if (a_dim == 2 && b_dim == 2)
+    {
+        a_shape_expand = {1, a_shape[0], a_shape[1]};
+        a_strides_expand = {0, a_strides[0], a_strides[1]};
+
+        b_shape_expand = {1, b_shape[0], b_shape[1]};
+        b_strides_expand = {0, b_strides[0], b_strides[1]};
+    }
+    else if (a_dim < b_dim)
     {
         b_shape_expand = b_shape;
 
@@ -150,7 +209,7 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
         b_shape_expand.insert(b_shape_expand.end(), b_shape.begin(),
                               b_shape.end());
 
-        b_strides_expand.resize(b_dim - a_dim, 0);
+        b_strides_expand.resize(a_dim - b_dim, 0);
         b_strides_expand.insert(b_strides_expand.end(), b_strides.begin(),
                                 b_strides.end());
     }
@@ -158,11 +217,12 @@ void Matmul::forward(Tensor& result, const Tensor& a, const Tensor& b)
     {
         a_shape_expand = a_shape;
         b_shape_expand = b_shape;
+        a_strides_expand = a_strides;
+        b_strides_expand = b_strides;
     }
-    Tensor a_expand(a);
-    a_expand = a_expand.reshape(a_shape_expand);
-    Tensor b_expand(b);
-    b_expand = b_expand.reshape(b_shape_expand);
+
+    Tensor a_expand(a, a_shape_expand, a_strides_expand, 0);
+    Tensor b_expand(b, b_shape_expand, b_strides_expand, 0);
 
     const std::vector<uint64_t> result_shape =
         calculate_matmul_size(a_shape_expand, b_shape_expand);
@@ -227,7 +287,7 @@ std::vector<uint64_t> Matmul::calculate_matmul_size(
     }
 
     std::vector<uint64_t> result(a);
-    result[result.size() - 1] = b.back();
+    result.back() = b.back();
 
     return result;
 }

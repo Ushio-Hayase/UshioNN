@@ -68,39 +68,26 @@ uint64_t TensorImpl::get_elem_size() const noexcept
     }
 }
 
+#if !USE_CUDA
 void TensorImpl::zero() noexcept
 {
-    switch (type_)
-    {
-    case DType::FP64:
-        std::memset(data_ptr<double>(), 0, storage_->nbytes());
-    case DType::FP32:
-        std::memset(data_ptr<float>(), 0, storage_->nbytes());
-    case DType::FP16:
-        std::memset(data_ptr<fp16_t>(), 0, storage_->nbytes());
-    case DType::BF16:
-        std::memset(data_ptr<bf16_t>(), 0, storage_->nbytes());
-    case DType::FP8_e4m3:
-        std::memset(data_ptr<fp8_e4m3_t>(), 0, storage_->nbytes());
-    case DType::FP8_e5m2:
-        std::memset(data_ptr<fp8_e5m2_t>(), 0, storage_->nbytes());
-    case DType::FP4:
-        std::memset(data_ptr<fp4_t>(), 0, storage_->nbytes());
-    }
+    const auto& st = storage();
+    if (device().type == Device::DeviceType::HOST)
+        std::memset(st->data(), 0, st->nbytes());
 }
+#endif
 
 bool TensorImpl::is_contiguous() const
 {
-    if (total_elements_ == 0 || shape_.size() == 0)
+    if (total_elements_ == 0 || shape_.empty())
         return true;
 
     uint64_t expected_stride = 1;
 
-    for (int i = shape_.size() - 1; i >= 0; --i)
+    for (int64_t i = shape_.size() - 1; i >= 0; --i)
     {
-        if (shape_[i] != 1)
-            if (strides_[i] != expected_stride)
-                return false;
+        if (strides_[i] != expected_stride)
+            return false;
         expected_stride *= shape_[i];
     }
 

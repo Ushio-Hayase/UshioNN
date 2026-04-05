@@ -257,70 +257,100 @@ uint64_t Tensor::get_elem_size() const noexcept
 
 void Tensor::zero() noexcept { impl_->zero(); }
 
-void* Tensor::data() const { return impl_->storage()->data(); }
+void* Tensor::data() const
+{
+    return static_cast<unsigned char*>(impl_->storage()->data()) +
+           impl_->storage_offset() * get_elem_size();
+}
+
+template <typename T>
+static void apply_contiguous(const void* src_ptr_raw, void* dst_ptr_raw,
+                             uint64_t total_elements, int rank,
+                             const std::vector<uint64_t>& shape,
+                             const std::vector<uint64_t>& strides);
 
 Tensor Tensor::clone_cpu() const
 {
-    const auto& _shape = shape();
-    Tensor result(_shape, device(), dtype());
-    int total_elements = result.numel();
-    int ndim = _shape.size();
-    std::vector<uint64_t> dst_strides =
-        TensorImpl::calculate_default_strides(_shape);
-    std::vector<uint64_t> coords(ndim);
+    Tensor result(shape(), device(), dtype());
 
-    const auto& strides = impl_->strides();
+    const void* src_ptr = data();
+    void* dst_ptr = result.data();
 
-    // CPU 루프: 순차적 처리
-    for (int i = 0; i < total_elements; ++i)
+    switch (this->dtype())
     {
-        int remaining = i;
-        int src_physical_offset = impl_->storage_offset();
-        for (int d = 0; d < ndim; ++d)
-        {
-            coords[d] = remaining / dst_strides[d];
-            remaining %= dst_strides[d];
-            src_physical_offset += coords[d] * strides[d];
-        }
-        switch (dtype())
-        {
-        case DType::FP64: {
-            result.data_ptr<double>()[i] =
-                data_ptr<double>()[src_physical_offset];
-            break;
-        }
-        case DType::FP32: {
-            result.data_ptr<float>()[i] =
-                data_ptr<float>()[src_physical_offset];
-            break;
-        }
-        case DType::FP16: {
-            result.data_ptr<fp16_t>()[i] =
-                data_ptr<fp16_t>()[src_physical_offset];
-            break;
-        }
-        case DType::BF16: {
-            result.data_ptr<bf16_t>()[i] =
-                data_ptr<bf16_t>()[src_physical_offset];
-            break;
-        }
-        case DType::FP8_e4m3: {
-            result.data_ptr<fp8_e4m3_t>()[i] =
-                data_ptr<fp8_e4m3_t>()[src_physical_offset];
-            break;
-        }
-        case DType::FP8_e5m2: {
-            result.data_ptr<fp8_e5m2_t>()[i] =
-                data_ptr<fp8_e5m2_t>()[src_physical_offset];
-            break;
-        }
-        case DType::FP4: {
-            result.data_ptr<fp4_t>()[i] =
-                data_ptr<fp4_t>()[src_physical_offset];
-            break;
-        }
-        }
+    case DType::FP64:
+        apply_contiguous<double>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                 strides());
+        break;
+    case DType::FP32:
+        apply_contiguous<float>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                strides());
+        break;
+    case DType::FP16:
+        apply_contiguous<fp16_t>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                 strides());
+        break;
+    case DType::BF16:
+        apply_contiguous<bf16_t>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                 strides());
+        break;
+
+    case DType::FP8_e4m3:
+        apply_contiguous<fp8_e4m3_t>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                     strides());
+        break;
+    case DType::FP8_e5m2:
+        apply_contiguous<fp8_e5m2_t>(src_ptr, dst_ptr, numel(), dim(), shape(),
+                                     strides());
+        break;
+    default:
+        LOG_ERROR("{} is a data type that is not yet supported.",
+                  dtype_to_string(result.dtype()));
     }
     return result;
 }
+
+template <typename T>
+void apply_contiguous(const void* src_ptr_raw, void* dst_ptr_raw,
+                      uint64_t total_elements, int rank,
+                      const std::vector<uint64_t>& shape,
+                      const std::vector<uint64_t>& strides)
+{
+    const T* src = static_cast<const T*>(src_ptr_raw);
+    T* dst = static_cast<T*>(dst_ptr_raw);
+
+    // 스칼라(0차원) 처리
+    if (rank == 0)
+    {
+        dst[0] = src[0];
+        return;
+    }
+
+    std::vector<uint64_t> coords(rank, 0);
+    uint64_t src_offset = 0;
+
+    for (uint64_t i = 0; i < total_elements; ++i)
+    {
+        // 데이터 복사
+        dst[i] = src[src_offset];
+
+        // N차원 인덱스 전진 (Division/Modulo 없이 덧셈/뺄셈만 사용)
+        for (int d = rank - 1; d >= 0; --d)
+        {
+            coords[d]++;
+            if (coords[d] < shape[d])
+            {
+                src_offset += strides[d];
+                break; // 캐리(Carry)가 발생하지 않으면 하위 차원 전진 멈춤
+            }
+            else
+            {
+                coords[d] = 0; // 초기화
+                // 해당 차원을 리셋하면서, 더해졌던 스트라이드만큼 다시 빼줌
+                src_offset -= (shape[d] - 1) * strides[d];
+            }
+        }
+    }
+}
+
 } // namespace ushionn

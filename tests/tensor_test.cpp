@@ -109,6 +109,10 @@ TEST(TensorOperationTest, HOSTMatmulTest)
 
     for (int i = 0; i < 4; ++i)
         EXPECT_EQ(result_ptr[i], data_result[i]);
+
+    delete[] data_a;
+    delete[] data_b;
+    delete[] data_result;
 }
 
 #if defined(USE_CUDA)
