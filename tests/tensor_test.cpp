@@ -216,4 +216,55 @@ TEST(TensorOperationTest, DEVICEElemwiseMulTest)
 
     delete[] result_cpu_data;
 }
+
+TEST(TensorOperationTest, DEVICEMatmulTest)
+{
+    const ushionn::Device device = {ushionn::Device::DeviceType::DEVICE, 0};
+
+    double* data_a;
+    double* data_b;
+    double* data_result = new double[4];
+
+    cudaMalloc((void**)&data_a, sizeof(double) * 4);
+    cudaMalloc((void**)&data_b, sizeof(double) * 4);
+
+    double* host_data = new double[4];
+
+    for (int i = 1; i <= 4; ++i)
+        host_data[i - 1] = i;
+
+    cudaMemcpy(data_a, host_data, sizeof(double) * 4, cudaMemcpyHostToDevice);
+
+    for (int i = 5; i <= 8; ++i)
+        host_data[i - 5] = i;
+
+    cudaMemcpy(data_b, host_data, sizeof(double) * 4, cudaMemcpyHostToDevice);
+
+    delete[] host_data;
+
+    data_result[0] = 19;
+    data_result[1] = 22;
+    data_result[2] = 43;
+    data_result[3] = 50;
+
+    ushionn::Tensor t1({1, 2, 2}, data_a, device);
+    ushionn::Tensor t2({1, 2, 2}, data_b, device);
+
+    cudaFree(data_a);
+    cudaFree(data_b);
+
+    ushionn::Tensor result = ushionn::function::matmul(t1, t2);
+
+    auto result_ptr = result.data_ptr<double>();
+
+    double* host_result_ptr = new double[4];
+    cudaMemcpy(host_result_ptr, result_ptr, sizeof(double) * 4,
+               cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < 4; ++i)
+        EXPECT_EQ(host_result_ptr[i], data_result[i]);
+
+    delete[] data_result;
+    delete[] host_result_ptr;
+}
 #endif

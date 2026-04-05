@@ -22,9 +22,9 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
     const auto& b_shape = b_contiguous.shape();
     const auto& result_shape = result.shape();
 
-    const uint64_t k_size = a_shape[a_dim - 1];
-    const uint64_t i_size = a_shape[a_dim - 2];
-    const uint64_t j_size = b_shape[b_dim - 1];
+    const uint64_t K = a_shape[a_dim - 1];
+    const uint64_t M = a_shape[a_dim - 2];
+    const uint64_t N = b_shape[b_dim - 1];
 
     const auto& a_strides = a_contiguous.strides();
     const auto& b_strides = b_contiguous.strides();
@@ -47,14 +47,14 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 
         for (int64_t batch = 0; batch < total_batch_size; ++batch)
         {
-            for (int64_t i = 0; i < i_size; ++i)
+            for (int64_t i = 0; i < M; ++i)
             {
-                for (int64_t k = 0; k < k_size; ++k)
+                for (int64_t k = 0; k < K; ++k)
                 {
                     const double r = a_data[batch * a_strides[a_dim - 3] +
                                             i * a_strides[a_dim - 2] +
                                             k * a_strides[a_dim - 1]];
-                    for (int64_t j = 0; j < j_size; ++j)
+                    for (int64_t j = 0; j < N; ++j)
                     {
                         const uint64_t result_idx =
                             batch * result_strides[result_dim - 3] +
@@ -78,15 +78,15 @@ void matmul_kernel(Tensor& result, const Tensor& a, const Tensor& b)
 
         for (int64_t batch = 0; batch < total_batch_size; ++batch)
         {
-            for (int64_t i = 0; i < i_size; ++i)
+            for (int64_t i = 0; i < M; ++i)
             {
-                for (int64_t k = 0; k < k_size; ++k)
+                for (int64_t k = 0; k < K; ++k)
                 {
                     const float r = a_data[batch * a_strides[a_dim - 3] +
 
                                            (i * a_strides[a_dim - 2] +
                                             k * a_strides[a_dim - 1])];
-                    for (int64_t j = 0; j < j_size; ++j)
+                    for (int64_t j = 0; j < N; ++j)
                     {
 
                         result_data[batch * result_strides[result_dim - 3] +

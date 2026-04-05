@@ -75,7 +75,7 @@ class Tensor
     [[nodiscard]] uint64_t get_elem_size() const noexcept;
     void zero() noexcept;
 
-    void* data() const;
+    [[nodiscard]] void* data() const;
 
     template <ScalarType T> T* data_ptr() const
     {
