@@ -27,7 +27,10 @@ class Tensor
     template <ScalarType T>
     Tensor(const std::vector<uint64_t>& shape, const T* ptr, Device device);
 
-    Tensor(std::shared_ptr<TensorImpl> impl) : impl_(std::move(impl)) {}
+    Tensor(std::unique_ptr<TensorImpl>&& impl)
+        : impl_(std::forward<std::unique_ptr<TensorImpl>>(impl))
+    {
+    }
 
     /// @brief 기존의 텐서 데이터를 참조하는 새로운 텐서를 생성합니다.
     /// @param other 참조할 텐서
@@ -86,7 +89,7 @@ class Tensor
     Tensor clone_cpu() const;
     Tensor clone_gpu() const;
 
-    std::shared_ptr<TensorImpl> impl_;
+    std::unique_ptr<TensorImpl> impl_;
 };
 
 } // namespace ushionn

@@ -13,7 +13,7 @@ namespace ushionn
 
 Tensor::Tensor(const std::vector<uint64_t>& shape, Device location, DType type)
 {
-    impl_ = std::make_shared<TensorImpl>(shape, type, location);
+    impl_ = std::make_unique<TensorImpl>(shape, type, location);
 }
 
 template <ScalarType T>
@@ -58,7 +58,7 @@ Tensor::Tensor(const Tensor& other) { *this = other.clone(); }
 
 Tensor::Tensor(const Tensor& other, const std::vector<uint64_t>& shape,
                const std::vector<uint64_t>& strides, uint64_t offset)
-    : impl_(std::make_shared<TensorImpl>(other.impl_->storage(), shape, strides,
+    : impl_(std::make_unique<TensorImpl>(other.impl_->storage(), shape, strides,
                                          offset, other.dtype()))
 {
 }
@@ -82,11 +82,11 @@ Tensor Tensor::transpose(uint64_t dim1, uint64_t dim2) const
     std::swap(new_shape[dim1], new_shape[dim2]);
     std::swap(new_strides[dim1], new_strides[dim2]);
 
-    auto new_impl = std::make_shared<TensorImpl>(
+    auto new_impl = std::make_unique<TensorImpl>(
         this->impl_->storage(), new_shape, new_strides,
         this->impl_->storage_offset(), this->dtype());
 
-    return Tensor(new_impl);
+    return Tensor(std::move(new_impl));
 }
 
 Tensor Tensor::permute(const std::vector<uint64_t>& order) const
@@ -115,11 +115,11 @@ Tensor Tensor::permute(const std::vector<uint64_t>& order) const
         new_shape[i] = old_shape[order[i]];
     }
 
-    auto new_impl = std::make_shared<TensorImpl>(
+    auto new_impl = std::make_unique<TensorImpl>(
         this->impl_->storage(), new_shape, new_strides,
         this->impl_->storage_offset(), this->dtype());
 
-    return Tensor(new_impl);
+    return Tensor(std::move(new_impl));
     ;
 }
 
