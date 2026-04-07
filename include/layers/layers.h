@@ -8,6 +8,7 @@ namespace ushionn
 {
 namespace layer
 {
+
 class ILayer
 {
   public:

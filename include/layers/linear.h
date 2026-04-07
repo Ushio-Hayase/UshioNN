@@ -5,6 +5,8 @@
 #pragma once
 #include "layers.h"
 
+#include "graph/state_dict.h"
+
 namespace ushionn
 {
 namespace layer
@@ -17,6 +19,11 @@ class Linear final : public ILayer
     void load_weights(
         const std::unordered_map<std::string, Tensor>& state_dict) override;
     const std::string& name() override;
+
+  private:
+    graph::StateDict data_;
+    using operation_t = Tensor (*)(Tensor, Tensor);
+    operation_t operation_;
 };
 } // namespace layer
 } // namespace ushionn

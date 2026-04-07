@@ -13,6 +13,9 @@ namespace function
 class Matmul
 {
   public:
+    Matmul() = delete;
+    ~Matmul() = delete;
+
     static Tensor forward(const Tensor& a, const Tensor& b);
     static void forward(Tensor& result, const Tensor& a, const Tensor& b);
     static std::vector<uint64_t> calculate_matmul_size(
