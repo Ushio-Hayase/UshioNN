@@ -101,8 +101,8 @@ TEST(TensorOperationTest, HOSTMatmulTest)
     data_result[2] = 43;
     data_result[3] = 50;
 
-    ushionn::Tensor t1({1, 2, 2}, data_a, device);
-    ushionn::Tensor t2({1, 2, 2}, data_b, device);
+    ushionn::Tensor t1({2, 2}, data_a, device);
+    ushionn::Tensor t2({2, 2}, data_b, device);
     ushionn::Tensor result = ushionn::function::matmul(t1, t2);
 
     auto result_ptr = result.data_ptr<double>();
@@ -247,8 +247,8 @@ TEST(TensorOperationTest, DEVICEMatmulTest)
     data_result[2] = 43;
     data_result[3] = 50;
 
-    ushionn::Tensor t1({1, 2, 2}, data_a, device);
-    ushionn::Tensor t2({1, 2, 2}, data_b, device);
+    ushionn::Tensor t1({2, 2}, data_a, device);
+    ushionn::Tensor t2({2, 2}, data_b, device);
 
     cudaFree(data_a);
     cudaFree(data_b);
