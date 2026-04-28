@@ -35,7 +35,7 @@ Tensor::Tensor(const std::vector<uint64_t>& shape, const T* ptr,
         type = DType::FP8_e5m2;
     else if constexpr (std::is_same_v<T, fp4_t>)
         type = DType::FP4;
-    impl_ = std::make_shared<TensorImpl>(shape, type, location);
+    impl_ = std::make_unique<TensorImpl>(shape, type, location);
     if (location.type == Device::DeviceType::HOST)
         std::memcpy(data_ptr<T>(), ptr, numel() * get_elem_size());
     else if (location.type == Device::DeviceType::DEVICE)

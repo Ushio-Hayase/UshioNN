@@ -7,7 +7,7 @@
 
 namespace ushionn::function
 {
-class Mul
+class Mul : Operation
 {
   public:
     Mul() = delete;

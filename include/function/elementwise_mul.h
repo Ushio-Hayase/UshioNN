@@ -3,13 +3,15 @@
 //
 
 #pragma once
+#include "operation.h"
+
 #include "core/tensor.h"
 
 namespace ushionn
 {
 namespace function
 {
-class ElementWiseMul
+class ElementWiseMul : Operation
 {
   public:
     ElementWiseMul() = delete;

@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include "operation.h"
+
 #include "core/tensor.h"
 
 namespace ushionn
@@ -10,7 +12,7 @@ namespace ushionn
 namespace function
 {
 
-class Matmul
+class Matmul : Operation
 {
   public:
     Matmul() = delete;

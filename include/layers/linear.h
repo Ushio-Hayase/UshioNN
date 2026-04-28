@@ -7,9 +7,7 @@
 
 #include "graph/state_dict.h"
 
-namespace ushionn
-{
-namespace layer
+namespace ushionn::layer
 {
 class Linear final : public ILayer
 {
@@ -25,5 +23,4 @@ class Linear final : public ILayer
     using operation_t = Tensor (*)(Tensor, Tensor);
     operation_t operation_;
 };
-} // namespace layer
-} // namespace ushionn
+} // namespace ushionn::layer
